@@ -11,7 +11,7 @@ const escapeHTML = (value) => {
 async function loadPodcasts() {
   const podcasts = await App.ListPodcasts();
   $("#podcasts").innerHTML = podcasts.map((podcast) =>
-    `<div class="podcast ${state.podcast?.id === podcast.id ? "active" : ""}" data-id="${podcast.id}"><span>${escapeHTML(podcast.title)}</span><button data-purge-podcast="${podcast.id}" title="Purge this podcast's downloads">Purge</button></div>`
+    `<div class="podcast ${state.podcast?.id === podcast.id ? "active" : ""}" data-id="${podcast.id}"><span class="podcast-name">${escapeHTML(podcast.title)}</span><button class="compact-button" data-purge-podcast="${podcast.id}" title="Purge this podcast's downloads">Purge</button></div>`
   ).join("");
   document.querySelectorAll(".podcast").forEach((element) => {
     element.onclick = () => selectPodcast(Number(element.dataset.id));
@@ -29,8 +29,9 @@ async function selectPodcast(id) {
   const podcasts = await App.ListPodcasts();
   state.podcast = podcasts.find((podcast) => podcast.id === id);
   state.episodes = await App.ListEpisodes(id);
+  $("#active-podcast").innerHTML = `<div class="active-podcast-header">${state.podcast.artworkUrl ? `<img src="${escapeHTML(state.podcast.artworkUrl)}" alt="" class="artwork">` : `<div class="artwork artwork-placeholder">P</div>`}<div><p class="eyebrow">Now browsing</p><h2>${escapeHTML(state.podcast.title)}</h2><p class="muted">${escapeHTML(state.podcast.description)}</p></div></div>`;
   $("#episodes").innerHTML = state.episodes.length ? state.episodes.map((episode) =>
-    `<article class="episode"><div><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)}</h3><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Note for this episode">${escapeHTML(episode.notes)}</textarea></div><div class="episode-actions"><button data-play="${episode.id}">Play</button><button data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button><button data-save-note="${episode.id}">Save note</button><button data-purge-episode="${episode.id}">Purge download</button></div></article>`
+    `<article class="episode"><div class="episode-main"><div class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)}</h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button><button class="pill-button" data-purge-episode="${episode.id}">Purge</button></div></div><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></article>`
   ).join("") : `<p class="muted">No episodes found in this feed.</p>`;
   document.querySelectorAll("[data-play]").forEach((button) => {
     button.onclick = () => play(Number(button.dataset.play));
@@ -80,6 +81,8 @@ $("#itunes-search").onsubmit = async (event) => {
   event.preventDefault();
   try {
     const results = await App.SearchITunes($("#search-query").value);
+    $("#search-view").hidden = false;
+    $("#podcasts").hidden = true;
     $("#search-results").innerHTML = results.length ? results.map((result) =>
       `<div class="search-result"><strong>${escapeHTML(result.title)}</strong><button data-search-feed="${escapeHTML(result.feedUrl)}">Subscribe</button></div>`
     ).join("") : `<p class="muted">No podcasts found.</p>`;
@@ -88,8 +91,9 @@ $("#itunes-search").onsubmit = async (event) => {
     });
   } catch (error) { alert(error); }
 };
-$("#import-opml").onclick = async () => { const path = $("#opml-path").value.trim(); if (!path) return alert("Enter an OPML file path."); await App.ImportOPML(path); await loadPodcasts(); };
-$("#export-opml").onclick = async () => { const path = $("#opml-path").value.trim(); if (!path) return alert("Enter an OPML file path."); await App.ExportOPML(path); alert("OPML exported."); };
+$("#close-search").onclick = () => { $("#search-view").hidden = true; $("#podcasts").hidden = false; $("#search-results").replaceChildren(); $("#search-query").value = ""; };
+$("#import-opml").onclick = async () => { try { await App.ImportOPMLDialog(); await loadPodcasts(); } catch (error) { alert(error); } };
+$("#export-opml").onclick = async () => { try { await App.ExportOPMLDialog(); } catch (error) { alert(error); } };
 
 $("#audio").addEventListener("timeupdate", () => {
   const episode = state.episodes.find((item) => item.title === $("#now-playing").textContent);

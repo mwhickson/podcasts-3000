@@ -44,6 +44,12 @@ export async function ImportOPML(path) {
 export async function ExportOPML(path) {
   return (await waitForBackend()).ExportOPML(path);
 }
+export async function ImportOPMLDialog() {
+  return (await waitForBackend()).ImportOPMLDialog();
+}
+export async function ExportOPMLDialog() {
+  return (await waitForBackend()).ExportOPMLDialog();
+}
 export async function ToggleFavorite(episodeID) {
   return (await waitForBackend()).ToggleFavorite(episodeID);
 }

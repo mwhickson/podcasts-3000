@@ -60,3 +60,8 @@ All AI agents working on this codebase MUST read this log prior to executing any
 - Issue: The root `web/` directory appeared to be the active frontend location even though Wails embedded `cmd/podcasts3000/frontend`.
 - Root Cause: The initial HTTP proof of concept used root-level web assets before the Wails migration; the directory was left empty after assets moved.
 - Prevention Rule: Keep Wails HTML, CSS, JavaScript, and generated binding wrappers under `cmd/podcasts3000/frontend`; do not maintain a second root-level frontend tree.
+
+## [2026-11-04] Native Wails File Dialogs
+- Issue: The UI initially requested raw OPML filesystem paths in a text input, which bypassed native desktop file selection.
+- Root Cause: Wails v2.10.2 exposes `OpenFileDialog` and `SaveFileDialog` through the Go runtime package, not as JavaScript `window.runtime` methods.
+- Prevention Rule: Bind Go methods that invoke `github.com/wailsapp/wails/v2/pkg/runtime` dialogs and keep OPML path entry out of the frontend. Native dialogs provide platform path handling, including home-directory navigation.

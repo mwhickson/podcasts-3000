@@ -7,14 +7,18 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type App struct {
 	Store        *Store
 	MediaBaseURL string
+	ctx          context.Context
 }
 
-func (a *App) Startup(context.Context) {
+func (a *App) Startup(ctx context.Context) {
+	a.ctx = ctx
 	go func() {
 		if err := a.RefreshAllFeeds(); err != nil {
 			fmt.Printf("podcasts3000: startup refresh: %v\n", err)
@@ -32,6 +36,27 @@ func (a *App) ListEpisodes(podcastID int64) ([]Episode, error) {
 
 func (a *App) ImportOPML(path string) error { return a.Store.ImportOPML(context.Background(), path) }
 func (a *App) ExportOPML(path string) error { return a.Store.ExportOPML(context.Background(), path) }
+func (a *App) ImportOPMLDialog() error {
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Import podcast subscriptions",
+		Filters: []runtime.FileFilter{{DisplayName: "OPML files", Pattern: "*.opml;*.xml"}},
+	})
+	if err != nil || path == "" {
+		return err
+	}
+	return a.ImportOPML(path)
+}
+func (a *App) ExportOPMLDialog() error {
+	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+		Title:            "Export podcast subscriptions",
+		DefaultFilename: "podcasts-3000.opml",
+		Filters:          []runtime.FileFilter{{DisplayName: "OPML files", Pattern: "*.opml"}},
+	})
+	if err != nil || path == "" {
+		return err
+	}
+	return a.ExportOPML(path)
+}
 func (a *App) Subscribe(url string) (Podcast, error) {
 	return a.Store.Subscribe(context.Background(), url)
 }

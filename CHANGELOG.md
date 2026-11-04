@@ -9,3 +9,4 @@
 - Fixed Wails IPC binding resolution for the `podcasts.App` package namespace and added tagged runtime smoke checks.
 - Added iTunes podcast search and direct subscribe results.
 - Added OPML import/export controls, episode starring and notes, and all/podcast/episode cache purge controls.
+- Refined the Wails UI with isolated search results, compact episode actions, native OPML dialogs, artwork headers, and a fixed player bar.

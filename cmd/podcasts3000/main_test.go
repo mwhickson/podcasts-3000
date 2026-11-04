@@ -24,4 +24,13 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if strings.Contains(source, "globalThis.go?.main?.App") {
 		t.Fatal("frontend binding still references the incorrect main.App namespace")
 	}
+	if !strings.Contains(string(index), `id="close-search"`) || !strings.Contains(string(index), `id="search-view"`) {
+		t.Fatal("frontend is missing isolated search view controls")
+	}
+	if strings.Contains(string(index), `id="opml-path"`) {
+		t.Fatal("frontend still exposes a raw OPML path input")
+	}
+	if !strings.Contains(string(index), `id="active-podcast"`) || !strings.Contains(string(index), `class="player"`) {
+		t.Fatal("frontend is missing artwork header or fixed player regions")
+	}
 }
