@@ -40,3 +40,18 @@ All AI agents working on this codebase MUST read this log prior to executing any
 - Issue: Initial grouped struct tags caused `go vet` failures because one tag was applied to several fields.
 - Root Cause: Go struct tags are per-field and cannot be safely grouped when fields have different names.
 - Prevention Rule: Declare explicit tags on every serialized field and run `go vet ./...` after model changes.
+
+## [2026-11-03] Desktop Shell Integration
+- Issue: The first executable exposed the application through a local HTTP server, which did not satisfy the required Wails desktop architecture.
+- Root Cause: The initial implementation prioritized quickly exercising the backend and browser UI before wiring the desktop lifecycle.
+- Prevention Rule: Treat the Wails entrypoint, embedded assets, bound methods, startup lifecycle, and platform options as required deliverables rather than optional packaging work.
+
+## [2026-11-03] Wails Linux Build Tags
+- Issue: Running the application without build tags produced `Wails applications will not build without the correct build tags`.
+- Root Cause: Wails intentionally uses a guard implementation when neither `dev` nor `production` is selected; Linux WebKitGTK integration also requires the matching `webkit2_41` tag.
+- Prevention Rule: Run Linux Wails applications with `go run -tags 'production webkit2_41' ./cmd/podcasts3000` or use the repository `make run` target. Use the relative `./cmd/podcasts3000` package path, and ensure `/usr/local/go/bin` is on `PATH`.
+
+## [2026-11-03] Wails Binding Initialization Race
+- Issue: The frontend called `window.go.main.App` immediately during module evaluation and displayed `TypeError: undefined is not an object` when Wails had not injected bindings yet.
+- Root Cause: Wails delivers bound-method metadata asynchronously during desktop runtime initialization; a browser module can execute before that object exists.
+- Prevention Rule: Resolve Wails bindings lazily and wait for `globalThis.go.main.App` before invoking methods. Treat `go run` as a temporary executable workflow; use `make build` for a persistent binary.

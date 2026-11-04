@@ -7,3 +7,7 @@
 - Implemented Phase 2: media cache lifecycle, atomic `.part` downloads, range-capable local serving, playback state, favorites, and notes.
 - Implemented Phase 3 and 4 baseline: application bridge methods and a node-free browser interface served by the Go executable.
 - Verified with `go test ./...` and `go vet ./...`.
+- Replaced the HTTP proof-of-concept entrypoint with a Wails v2 desktop application.
+- Embedded the frontend in the binary, bound application methods through Wails IPC, added startup feed refresh, and retained a loopback range-serving media endpoint for cached audio.
+- Verified the Wails application with `go build ./cmd/podcasts3000`, `go test ./...`, and `go vet ./...`.
+- Confirmed direct Linux execution requires `production webkit2_41` tags and documented the tagged run target.

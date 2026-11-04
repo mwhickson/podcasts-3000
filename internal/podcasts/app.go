@@ -14,6 +14,22 @@ type App struct {
 	MediaBaseURL string
 }
 
+func (a *App) Startup(context.Context) {
+	go func() {
+		if err := a.RefreshAllFeeds(); err != nil {
+			fmt.Printf("podcasts3000: startup refresh: %v\n", err)
+		}
+	}()
+}
+
+func (a *App) ListPodcasts() ([]Podcast, error) {
+	return a.Store.ListPodcasts(context.Background())
+}
+
+func (a *App) ListEpisodes(podcastID int64) ([]Episode, error) {
+	return a.Store.ListEpisodes(context.Background(), podcastID)
+}
+
 func (a *App) ImportOPML(path string) error { return a.Store.ImportOPML(context.Background(), path) }
 func (a *App) ExportOPML(path string) error { return a.Store.ExportOPML(context.Background(), path) }
 func (a *App) Subscribe(url string) (Podcast, error) {

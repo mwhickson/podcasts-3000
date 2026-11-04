@@ -43,3 +43,24 @@ func (s *Store) Close() error { return s.db.Close() }
 func (s *Store) DB() *sql.DB { return s.db }
 
 func (s *Store) Ping(ctx context.Context) error { return s.db.PingContext(ctx) }
+
+func (s *Store) ListEpisodes(ctx context.Context, podcastID int64) ([]Episode, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT e.id,e.podcast_id,e.guid,e.title,COALESCE(e.description,''),e.audio_url,COALESCE(e.local_cache_path,''),e.pub_date,e.is_downloaded,e.duration_seconds,COALESCE(ps.position_seconds,0),COALESCE(ps.is_completed,0),CASE WHEN f.episode_id IS NULL THEN 0 ELSE 1 END,COALESCE(f.notes,'') FROM episodes e LEFT JOIN playback_state ps ON ps.episode_id=e.id LEFT JOIN favorites f ON f.episode_id=e.id WHERE e.podcast_id=? ORDER BY e.pub_date DESC`, podcastID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var episodes []Episode
+	for rows.Next() {
+		var episode Episode
+		var downloaded, completed, favorite int
+		if err := rows.Scan(&episode.ID, &episode.PodcastID, &episode.GUID, &episode.Title, &episode.Description, &episode.AudioURL, &episode.LocalCachePath, &episode.PubDate, &downloaded, &episode.DurationSeconds, &episode.PositionSeconds, &completed, &favorite, &episode.Notes); err != nil {
+			return nil, err
+		}
+		episode.IsDownloaded = downloaded != 0
+		episode.IsCompleted = completed != 0
+		episode.IsFavorite = favorite != 0
+		episodes = append(episodes, episode)
+	}
+	return episodes, rows.Err()
+}

@@ -17,15 +17,20 @@ type Podcast struct {
 }
 
 type Episode struct {
-	ID, PodcastID                                      int64
-	GUID, Title, Description, AudioURL, LocalCachePath string
-	PubDate                                            *time.Time
-	IsDownloaded                                       bool
-	DurationSeconds                                    int
-	PositionSeconds                                    int
-	IsCompleted                                        bool
-	IsFavorite                                         bool
-	Notes                                              string
+	ID              int64      `json:"id"`
+	PodcastID       int64      `json:"podcastId"`
+	GUID            string     `json:"guid,omitempty"`
+	Title           string     `json:"title,omitempty"`
+	Description     string     `json:"description,omitempty"`
+	AudioURL        string     `json:"audioUrl,omitempty"`
+	LocalCachePath  string     `json:"localCachePath,omitempty"`
+	PubDate         *time.Time `json:"pubDate,omitempty"`
+	IsDownloaded    bool       `json:"isDownloaded"`
+	DurationSeconds int        `json:"durationSeconds"`
+	PositionSeconds int        `json:"positionSeconds"`
+	IsCompleted     bool       `json:"isCompleted"`
+	IsFavorite      bool       `json:"isFavorite"`
+	Notes           string     `json:"notes,omitempty"`
 }
 
 type SearchResult struct {
