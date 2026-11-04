@@ -2,6 +2,7 @@
 # Compiled application binaries
 build/bin/
 bin/
+release/
 
 # Frontend auto-generated bindings (Optional: uncomment if you prefer to regenerate them on every machine)
 # frontend/wailsjs/
