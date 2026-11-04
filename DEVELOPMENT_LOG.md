@@ -13,3 +13,4 @@
 - Confirmed direct Linux execution requires `production webkit2_41` tags and documented the tagged run target.
 - Diagnosed subscription binding failures: the bound type is `podcasts.App`, not `main.App`; aligned the frontend wrapper and generated-binding path with that namespace.
 - Added `make runtime-test`, an embedded-frontend binding test, and a short graphical Wails startup smoke test.
+- Implemented the next application phase: iTunes search UI, OPML path controls, episode favorites and notes, and scoped cache purge controls.

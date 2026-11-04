@@ -35,3 +35,21 @@ export async function GetAudioSource(episodeID) {
 export async function SaveProgress(episodeID, seconds, completed) {
   return (await waitForBackend()).SaveProgress(episodeID, seconds, completed);
 }
+export async function SearchITunes(query) {
+  return (await waitForBackend()).SearchITunes(query);
+}
+export async function ImportOPML(path) {
+  return (await waitForBackend()).ImportOPML(path);
+}
+export async function ExportOPML(path) {
+  return (await waitForBackend()).ExportOPML(path);
+}
+export async function ToggleFavorite(episodeID) {
+  return (await waitForBackend()).ToggleFavorite(episodeID);
+}
+export async function SaveNote(episodeID, note) {
+  return (await waitForBackend()).SaveNote(episodeID, note);
+}
+export async function PurgeCache(scope, targetID) {
+  return (await waitForBackend()).PurgeCache(scope, targetID);
+}
