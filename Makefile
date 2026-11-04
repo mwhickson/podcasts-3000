@@ -1,4 +1,4 @@
-.PHONY: run test vet build
+.PHONY: run test vet build runtime-test
 
 run:
 	go run -tags 'production webkit2_41' ./cmd/podcasts3000
@@ -14,3 +14,6 @@ build:
 
 run-dev:
 	go run -tags 'dev webkit2_41' ./cmd/podcasts3000
+
+runtime-test:
+	go test -tags 'production webkit2_41' ./cmd/podcasts3000 ./internal/podcasts

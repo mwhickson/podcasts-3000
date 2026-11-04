@@ -33,11 +33,21 @@ The package path starts with `./` (a relative path), not `/.`:
 
 `go run` uses a temporary executable and does not leave a binary in the repository. Use `make build` when a persistent `podcasts3000` binary is required. `make run-dev` is available for Wails development builds.
 
+The Wails frontend source lives exclusively under `cmd/podcasts3000/frontend` and is embedded into the binary. The root `web/` directory is not used and may remain absent.
+
 ## Verify
 
 ```sh
 go test ./...
 go vet ./...
 ```
+
+For a Wails-tagged integration compile and embedded-frontend smoke test:
+
+```sh
+make runtime-test
+```
+
+This validates the production Wails package, embedded assets, and the bound `podcasts.App` namespace. A full GUI interaction test still requires a graphical desktop session; manually verify subscribing with a reachable RSS feed after launching `make run`.
 
 The backend is organized around `internal/podcasts.App` and is bound directly to the embedded Wails frontend. No Node toolchain is required.

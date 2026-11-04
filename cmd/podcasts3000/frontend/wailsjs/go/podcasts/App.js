@@ -2,7 +2,7 @@ function waitForBackend(timeout = 10000) {
   const started = Date.now();
   return new Promise((resolve, reject) => {
     const check = () => {
-      const backend = globalThis.go?.main?.App;
+      const backend = globalThis.go?.podcasts?.App;
       if (backend) {
         resolve(backend);
         return;

@@ -11,3 +11,5 @@
 - Embedded the frontend in the binary, bound application methods through Wails IPC, added startup feed refresh, and retained a loopback range-serving media endpoint for cached audio.
 - Verified the Wails application with `go build ./cmd/podcasts3000`, `go test ./...`, and `go vet ./...`.
 - Confirmed direct Linux execution requires `production webkit2_41` tags and documented the tagged run target.
+- Diagnosed subscription binding failures: the bound type is `podcasts.App`, not `main.App`; aligned the frontend wrapper and generated-binding path with that namespace.
+- Added `make runtime-test`, an embedded-frontend binding test, and a short graphical Wails startup smoke test.

@@ -53,5 +53,10 @@ All AI agents working on this codebase MUST read this log prior to executing any
 
 ## [2026-11-03] Wails Binding Initialization Race
 - Issue: The frontend called `window.go.main.App` immediately during module evaluation and displayed `TypeError: undefined is not an object` when Wails had not injected bindings yet.
-- Root Cause: Wails delivers bound-method metadata asynchronously during desktop runtime initialization; a browser module can execute before that object exists.
-- Prevention Rule: Resolve Wails bindings lazily and wait for `globalThis.go.main.App` before invoking methods. Treat `go run` as a temporary executable workflow; use `make build` for a persistent binary.
+- Root Cause: The bound value is `podcasts.App`, so Wails exposes it at `window.go.podcasts.App`; the frontend also needed to tolerate asynchronous runtime initialization.
+- Prevention Rule: Resolve Wails bindings lazily and wait for `globalThis.go.podcasts.App` before invoking methods. Validate the embedded frontend namespace with `make runtime-test`. Treat `go run` as a temporary executable workflow; use `make build` for a persistent binary.
+
+## [2026-11-03] Wails Frontend Source Location
+- Issue: The root `web/` directory appeared to be the active frontend location even though Wails embedded `cmd/podcasts3000/frontend`.
+- Root Cause: The initial HTTP proof of concept used root-level web assets before the Wails migration; the directory was left empty after assets moved.
+- Prevention Rule: Keep Wails HTML, CSS, JavaScript, and generated binding wrappers under `cmd/podcasts3000/frontend`; do not maintain a second root-level frontend tree.

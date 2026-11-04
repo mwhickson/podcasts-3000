@@ -1,4 +1,4 @@
-import * as App from "./wailsjs/go/main/App.js";
+import * as App from "./wailsjs/go/podcasts/App.js";
 
 const state = { podcast: null, episodes: [] };
 const $ = (selector) => document.querySelector(selector);
