@@ -90,3 +90,8 @@ All AI agents working on this codebase MUST read this log prior to executing any
 - Issue: Some feeds failed to display because SQLite returned `pub_date` as a string while the driver could not scan it directly into `*time.Time`.
 - Root Cause: SQLite DATETIME columns can contain NULL, text, bytes, or native time values depending on how data was written.
 - Prevention Rule: Scan stored dates through a tolerant nullable-date adapter, treating missing or malformed values as absent. Feed parsing must also supply safe title, GUID, description, and duration defaults when source fields are missing.
+
+## [2026-11-04] HTML Feed Descriptions
+- Issue: Feed descriptions containing HTML markup were displayed with raw tags.
+- Root Cause: RSS and Atom descriptions are commonly HTML or CDATA content, but were stored and rendered as plain strings.
+- Prevention Rule: Convert feed descriptions and summaries to plain text during parsing using the standard library, preserving text and basic block spacing without adding a dependency.

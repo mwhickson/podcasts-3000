@@ -20,3 +20,4 @@
 - Replaced all frontend messageboxes with native Wails confirmation, error, and information dialogs.
 - Fixed native confirmation response handling so unsubscribe and purge actions proceed on Linux Wails dialogs.
 - Hardened feed defaults and tolerant SQLite date scanning for incomplete or legacy feed data.
+- Converted HTML and CDATA feed descriptions to plain text without adding dependencies.

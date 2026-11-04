@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/xml"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -107,6 +108,41 @@ func parseDuration(value string) int {
 	return total
 }
 
+func htmlToText(value string) string {
+	var text strings.Builder
+	for i := 0; i < len(value); {
+		if value[i] != '<' {
+			text.WriteByte(value[i])
+			i++
+			continue
+		}
+		end := strings.IndexByte(value[i+1:], '>')
+		if end < 0 {
+			text.WriteString(value[i:])
+			break
+		}
+		tag := strings.TrimSpace(value[i+1 : i+1+end])
+		lowerTag := strings.ToLower(tag)
+		switch {
+		case strings.HasPrefix(lowerTag, "br"), strings.HasPrefix(lowerTag, "/p"), strings.HasPrefix(lowerTag, "p "),
+			strings.HasPrefix(lowerTag, "p"), strings.HasPrefix(lowerTag, "/div"), strings.HasPrefix(lowerTag, "div "),
+			strings.HasPrefix(lowerTag, "div"), strings.HasPrefix(lowerTag, "/li"), strings.HasPrefix(lowerTag, "li "),
+			strings.HasPrefix(lowerTag, "li"):
+			text.WriteByte('\n')
+		}
+		i += end + 2
+	}
+	decoded := strings.ReplaceAll(html.UnescapeString(text.String()), "\r\n", "\n")
+	lines := strings.Split(decoded, "\n")
+	normalized := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if line = strings.TrimSpace(line); line != "" {
+			normalized = append(normalized, line)
+		}
+	}
+	return strings.Join(normalized, "\n")
+}
+
 func parseFeed(data []byte) (Podcast, []Episode, error) {
 	var doc feedDocument
 	if err := xml.Unmarshal(data, &doc); err != nil {
@@ -130,7 +166,7 @@ func parseFeed(data []byte) (Podcast, []Episode, error) {
 			break
 		}
 	}
-	p := Podcast{Title: strings.TrimSpace(ch.Title), Description: strings.TrimSpace(description), SiteURL: siteURL, ArtworkURL: artwork}
+	p := Podcast{Title: strings.TrimSpace(ch.Title), Description: htmlToText(description), SiteURL: siteURL, ArtworkURL: artwork}
 	if p.Title == "" {
 		p.Title = "Untitled podcast"
 	}
@@ -153,9 +189,9 @@ func parseFeed(data []byte) (Podcast, []Episode, error) {
 		if guid == "" {
 			guid = audio
 		}
-		desc := strings.TrimSpace(item.Description)
+		desc := htmlToText(item.Description)
 		if desc == "" {
-			desc = strings.TrimSpace(item.Summary)
+			desc = htmlToText(item.Summary)
 		}
 		date := item.PubDate
 		if date == "" {
@@ -178,7 +214,7 @@ func parseFeed(data []byte) (Podcast, []Episode, error) {
 				if guid == "" {
 					guid = audio
 				}
-				episodes = append(episodes, Episode{GUID: guid, Title: title, Description: strings.TrimSpace(entry.Summary), AudioURL: audio, PubDate: parseDate(entry.Published)})
+				episodes = append(episodes, Episode{GUID: guid, Title: title, Description: htmlToText(entry.Summary), AudioURL: audio, PubDate: parseDate(entry.Published)})
 			}
 		}
 	}

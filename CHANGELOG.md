@@ -15,3 +15,4 @@
 - Replaced browser alerts and confirmations with native Wails message dialogs.
 - Fixed affirmative responses from native confirmation dialogs on Linux.
 - Hardened feed loading for missing fields and SQLite date values.
+- Converted HTML podcast and episode descriptions to readable plain text.

@@ -10,10 +10,17 @@ import (
 )
 
 func TestParseFeed(t *testing.T) {
-	data := []byte(`<rss><channel><title>Example</title><description>Desc</description><item><guid>one</guid><title>Episode one</title><description>Shownotes</description><pubDate>Mon, 02 Jan 2023 15:04:05 +0000</pubDate><enclosure url="https://example.test/one.mp3"/></item></channel></rss>`)
+	data := []byte(`<rss><channel><title>Example</title><description><![CDATA[<p>Desc &amp; details</p><p>More</p>]]></description><item><guid>one</guid><title>Episode one</title><description><![CDATA[<p>Shownotes</p><ul><li>One</li><li>Two</li></ul>]]></description><pubDate>Mon, 02 Jan 2023 15:04:05 +0000</pubDate><enclosure url="https://example.test/one.mp3"/></item></channel></rss>`)
 	podcast, episodes, err := parseFeed(data)
-	if err != nil || podcast.Title != "Example" || len(episodes) != 1 || episodes[0].AudioURL != "https://example.test/one.mp3" {
+	if err != nil || podcast.Title != "Example" || podcast.Description != "Desc & details\nMore" || len(episodes) != 1 || episodes[0].AudioURL != "https://example.test/one.mp3" || episodes[0].Description != "Shownotes\nOne\nTwo" {
 		t.Fatalf("unexpected parse result: %#v %#v %v", podcast, episodes, err)
+	}
+}
+
+func TestHTMLToTextPreservesContentWithoutMarkup(t *testing.T) {
+	got := htmlToText(`<div>Hello <strong>world</strong><br>5 &lt; 6</div>`)
+	if got != "Hello world\n5 < 6" {
+		t.Fatalf("htmlToText() = %q", got)
 	}
 }
 
