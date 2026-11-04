@@ -33,6 +33,8 @@ The package path starts with `./` (a relative path), not `/.`:
 
 `go run` uses a temporary executable and does not leave a binary in the repository. Use `make build` when a persistent `podcasts3000` binary is required. `make run-dev` is available for Wails development builds.
 
+Use `make release` to create `release/podcasts3000-linux-amd64` and `release/podcasts3000-windows-amd64.exe`.
+
 The Wails frontend source lives exclusively under `cmd/podcasts3000/frontend` and is embedded into the binary. The root `web/` directory is not used and may remain absent.
 
 ## Verify
