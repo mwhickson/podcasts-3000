@@ -257,7 +257,7 @@ func (s *Store) ListPodcasts(ctx context.Context) ([]Podcast, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var result []Podcast
+	result := make([]Podcast, 0)
 	for rows.Next() {
 		var p Podcast
 		if err := rows.Scan(&p.ID, &p.FeedURL, &p.Title, &p.Description, &p.SiteURL, &p.ArtworkURL, &p.ArtworkLocalPath, &p.CustomUserAgent, &p.LastRefreshedAt); err != nil {

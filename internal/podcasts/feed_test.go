@@ -72,3 +72,22 @@ func TestOPMLRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestListPodcastsReturnsEmptySliceWhenUnsubscribed(t *testing.T) {
+	dir := t.TempDir()
+	store, err := OpenStore(filepath.Join(dir, "podcasts.db"), filepath.Join(dir, "media"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	podcasts, err := store.ListPodcasts(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if podcasts == nil {
+		t.Fatal("ListPodcasts returned nil; Wails would serialize this as null")
+	}
+	if len(podcasts) != 0 {
+		t.Fatalf("podcast count = %d, want 0", len(podcasts))
+	}
+}

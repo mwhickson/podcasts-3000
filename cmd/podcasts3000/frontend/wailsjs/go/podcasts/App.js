@@ -59,3 +59,6 @@ export async function SaveNote(episodeID, note) {
 export async function PurgeCache(scope, targetID) {
   return (await waitForBackend()).PurgeCache(scope, targetID);
 }
+export async function Unsubscribe(podcastID) {
+  return (await waitForBackend()).Unsubscribe(podcastID);
+}

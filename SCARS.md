@@ -65,3 +65,13 @@ All AI agents working on this codebase MUST read this log prior to executing any
 - Issue: The UI initially requested raw OPML filesystem paths in a text input, which bypassed native desktop file selection.
 - Root Cause: Wails v2.10.2 exposes `OpenFileDialog` and `SaveFileDialog` through the Go runtime package, not as JavaScript `window.runtime` methods.
 - Prevention Rule: Bind Go methods that invoke `github.com/wailsapp/wails/v2/pkg/runtime` dialogs and keep OPML path entry out of the frontend. Native dialogs provide platform path handling, including home-directory navigation.
+
+## [2026-11-04] Podcast Unsubscribe Cache Cleanup
+- Issue: The initial unsubscribe method deleted only the podcast database row and left downloaded media on disk.
+- Root Cause: Unsubscribe bypassed the cache lifecycle helpers and issued a direct SQL delete.
+- Prevention Rule: Podcast deletion must enumerate and remove final and `.part` episode cache files before deleting the subscription, then verify both database cascade and filesystem cleanup in tests.
+
+## [2026-11-04] Empty Podcast List Serialization
+- Issue: After unsubscribing the final podcast, the frontend received `null` and failed with `TypeError: null is not an object (evaluating 'podcasts.map')`.
+- Root Cause: A nil Go slice serializes through Wails as JSON `null` rather than an empty array.
+- Prevention Rule: Collection-returning backend methods must initialize empty slices, and frontend collection consumers must normalize unexpected null responses to `[]`.

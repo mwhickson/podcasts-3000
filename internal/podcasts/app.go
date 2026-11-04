@@ -38,7 +38,7 @@ func (a *App) ImportOPML(path string) error { return a.Store.ImportOPML(context.
 func (a *App) ExportOPML(path string) error { return a.Store.ExportOPML(context.Background(), path) }
 func (a *App) ImportOPMLDialog() error {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "Import podcast subscriptions",
+		Title:   "Import podcast subscriptions",
 		Filters: []runtime.FileFilter{{DisplayName: "OPML files", Pattern: "*.opml;*.xml"}},
 	})
 	if err != nil || path == "" {
@@ -48,9 +48,9 @@ func (a *App) ImportOPMLDialog() error {
 }
 func (a *App) ExportOPMLDialog() error {
 	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-		Title:            "Export podcast subscriptions",
+		Title:           "Export podcast subscriptions",
 		DefaultFilename: "podcasts-3000.opml",
-		Filters:          []runtime.FileFilter{{DisplayName: "OPML files", Pattern: "*.opml"}},
+		Filters:         []runtime.FileFilter{{DisplayName: "OPML files", Pattern: "*.opml"}},
 	})
 	if err != nil || path == "" {
 		return err
@@ -61,8 +61,7 @@ func (a *App) Subscribe(url string) (Podcast, error) {
 	return a.Store.Subscribe(context.Background(), url)
 }
 func (a *App) Unsubscribe(id int64) error {
-	_, err := a.Store.DB().Exec(`DELETE FROM podcasts WHERE id=?`, id)
-	return err
+	return a.Store.Unsubscribe(context.Background(), id)
 }
 func (a *App) RefreshFeeds(id int64) error { return a.Store.RefreshFeeds(context.Background(), id) }
 func (a *App) RefreshAllFeeds() error {

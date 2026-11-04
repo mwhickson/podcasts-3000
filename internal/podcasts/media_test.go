@@ -45,3 +45,53 @@ func TestPurgeCacheScopes(t *testing.T) {
 		t.Fatalf("is_downloaded = %d, want 0", downloaded)
 	}
 }
+
+func TestUnsubscribeRemovesPodcastAndCacheFiles(t *testing.T) {
+	dir := t.TempDir()
+	store, err := OpenStore(filepath.Join(dir, "podcasts.db"), filepath.Join(dir, "media"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	result, err := store.DB().Exec(`INSERT INTO podcasts(feed_url,title) VALUES('https://example.test/unsubscribe','Unsubscribe me')`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	podcastID, _ := result.LastInsertId()
+	result, err = store.DB().Exec(`INSERT INTO episodes(podcast_id,guid,title,audio_url) VALUES(?,?,?,?)`, podcastID, "episode", "Episode", "https://example.test/audio.mp3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	episodeID, _ := result.LastInsertId()
+	cachePath := filepath.Join(dir, "media", "episode.mp3")
+	partialPath := cachePath + ".part"
+	for _, path := range []string{cachePath, partialPath} {
+		if err := os.WriteFile(path, []byte("audio"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := store.DB().Exec(`UPDATE episodes SET local_cache_path=?,is_downloaded=1 WHERE id=?`, cachePath, episodeID); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Unsubscribe(context.Background(), podcastID); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{cachePath, partialPath} {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("cache file %q still exists, stat error: %v", path, err)
+		}
+	}
+	var count int
+	if err := store.DB().QueryRow(`SELECT COUNT(*) FROM podcasts WHERE id=?`, podcastID).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 0 {
+		t.Fatalf("podcast count = %d, want 0", count)
+	}
+	if err := store.DB().QueryRow(`SELECT COUNT(*) FROM episodes WHERE id=?`, episodeID).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 0 {
+		t.Fatalf("episode count = %d, want 0", count)
+	}
+}

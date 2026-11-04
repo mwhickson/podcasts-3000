@@ -50,7 +50,7 @@ func (s *Store) ListEpisodes(ctx context.Context, podcastID int64) ([]Episode, e
 		return nil, err
 	}
 	defer rows.Close()
-	var episodes []Episode
+	episodes := make([]Episode, 0)
 	for rows.Next() {
 		var episode Episode
 		var downloaded, completed, favorite int
@@ -63,4 +63,42 @@ func (s *Store) ListEpisodes(ctx context.Context, podcastID int64) ([]Episode, e
 		episodes = append(episodes, episode)
 	}
 	return episodes, rows.Err()
+}
+
+func (s *Store) Unsubscribe(ctx context.Context, podcastID int64) error {
+	rows, err := s.db.QueryContext(ctx, `SELECT local_cache_path FROM episodes WHERE podcast_id=? AND local_cache_path IS NOT NULL AND local_cache_path != ''`, podcastID)
+	if err != nil {
+		return fmt.Errorf("find podcast cache files: %w", err)
+	}
+	var paths []string
+	for rows.Next() {
+		var path string
+		if err := rows.Scan(&path); err != nil {
+			rows.Close()
+			return fmt.Errorf("read podcast cache file: %w", err)
+		}
+		paths = append(paths, path, path+".part")
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("list podcast cache files: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("close podcast cache files: %w", err)
+	}
+	for _, path := range paths {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove podcast cache file %q: %w", path, err)
+		}
+	}
+	result, err := s.db.ExecContext(ctx, `DELETE FROM podcasts WHERE id=?`, podcastID)
+	if err != nil {
+		return fmt.Errorf("delete podcast: %w", err)
+	}
+	if count, err := result.RowsAffected(); err != nil {
+		return fmt.Errorf("check podcast deletion: %w", err)
+	} else if count == 0 {
+		return fmt.Errorf("podcast %d not found", podcastID)
+	}
+	return nil
 }

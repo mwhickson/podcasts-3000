@@ -10,3 +10,5 @@
 - Added iTunes podcast search and direct subscribe results.
 - Added OPML import/export controls, episode starring and notes, and all/podcast/episode cache purge controls.
 - Refined the Wails UI with isolated search results, compact episode actions, native OPML dialogs, artwork headers, and a fixed player bar.
+- Added podcast unsubscribe actions that remove the subscription and all associated cached and partial media files.
+- Fixed the empty-library state after removing the final podcast.

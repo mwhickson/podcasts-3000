@@ -9,9 +9,9 @@ const escapeHTML = (value) => {
 };
 
 async function loadPodcasts() {
-  const podcasts = await App.ListPodcasts();
+  const podcasts = (await App.ListPodcasts()) || [];
   $("#podcasts").innerHTML = podcasts.map((podcast) =>
-    `<div class="podcast ${state.podcast?.id === podcast.id ? "active" : ""}" data-id="${podcast.id}"><span class="podcast-name">${escapeHTML(podcast.title)}</span><button class="compact-button" data-purge-podcast="${podcast.id}" title="Purge this podcast's downloads">Purge</button></div>`
+    `<div class="podcast ${state.podcast?.id === podcast.id ? "active" : ""}" data-id="${podcast.id}"><span class="podcast-name">${escapeHTML(podcast.title)}</span><span class="podcast-actions"><button class="compact-button" data-purge-podcast="${podcast.id}" title="Purge this podcast's downloads">Purge</button><button class="compact-button" data-unsubscribe="${podcast.id}" title="Unsubscribe from this podcast">Unsubscribe</button></span></div>`
   ).join("");
   document.querySelectorAll(".podcast").forEach((element) => {
     element.onclick = () => selectPodcast(Number(element.dataset.id));
@@ -22,12 +22,37 @@ async function loadPodcasts() {
       if (confirm("Delete downloads for this podcast?")) await App.PurgeCache("podcast", Number(button.dataset.purgePodcast));
     };
   });
+  document.querySelectorAll("[data-unsubscribe]").forEach((button) => {
+    button.onclick = async (event) => {
+      event.stopPropagation();
+      const podcastID = Number(button.dataset.unsubscribe);
+      if (!confirm("Unsubscribe and remove all downloaded episodes for this podcast?")) return;
+      try {
+        await App.Unsubscribe(podcastID);
+        if (state.podcast?.id === podcastID) {
+          state.podcast = null;
+          state.episodes = [];
+          $("#active-podcast").replaceChildren();
+          $("#episodes").innerHTML = `<p class="muted">Select a podcast to browse episodes.</p>`;
+        }
+        await loadPodcasts();
+      } catch (error) {
+        alert(error);
+      }
+    };
+  });
   if (!state.podcast && podcasts.length) await selectPodcast(podcasts[0].id);
 }
 
 async function selectPodcast(id) {
-  const podcasts = await App.ListPodcasts();
+  const podcasts = (await App.ListPodcasts()) || [];
   state.podcast = podcasts.find((podcast) => podcast.id === id);
+  if (!state.podcast) {
+    state.episodes = [];
+    $("#active-podcast").replaceChildren();
+    $("#episodes").innerHTML = `<p class="muted">Select a podcast to browse episodes.</p>`;
+    return;
+  }
   state.episodes = await App.ListEpisodes(id);
   $("#active-podcast").innerHTML = `<div class="active-podcast-header">${state.podcast.artworkUrl ? `<img src="${escapeHTML(state.podcast.artworkUrl)}" alt="" class="artwork">` : `<div class="artwork artwork-placeholder">P</div>`}<div><p class="eyebrow">Now browsing</p><h2>${escapeHTML(state.podcast.title)}</h2><p class="muted">${escapeHTML(state.podcast.description)}</p></div></div>`;
   $("#episodes").innerHTML = state.episodes.length ? state.episodes.map((episode) =>

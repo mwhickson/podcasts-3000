@@ -33,4 +33,14 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if !strings.Contains(string(index), `id="active-podcast"`) || !strings.Contains(string(index), `class="player"`) {
 		t.Fatal("frontend is missing artwork header or fixed player regions")
 	}
+	app, err = frontend.ReadFile("frontend/app.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(app), `data-unsubscribe`) {
+		t.Fatal("frontend is missing the podcast unsubscribe action")
+	}
+	if !strings.Contains(string(app), `(await App.ListPodcasts()) || []`) {
+		t.Fatal("frontend does not normalize an empty podcast response")
+	}
 }
