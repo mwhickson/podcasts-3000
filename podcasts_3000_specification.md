@@ -18,7 +18,36 @@
 
 * **Distribution:** Single standalone binary output with local file system allocation for configuration, database, and cached media.
 
-## 2. Functional Requirements
+---
+
+## 2. Low-Level Technical Architecture & Engine Rules
+
+### A. SQLite Connection & Concurrency Strategy
+Because SQLite will be accessed by concurrent background processes (feed refresh workers, episode media downloaders) alongside user-driven UI operations, all database connection initializations **must** execute the following Pragmas immediately upon connection:
+
+```sql
+PRAGMA journal_mode = WAL;
+PRAGMA foreign_keys = ON;
+PRAGMA busy_timeout = 5000;
+```
+
+* **WAL Mode:** Write-Ahead Logging prevents database lock errors during simultaneous background writes and foreground reads.
+* **Pure-Go Driver:** Must use `modernc.org/sqlite` to guarantee zero CGO dependencies during cross-compilation with `gcc`/`mingw`.
+
+### B. Local Media Asset Server & Streaming Handler
+To avoid CORS, webview cross-origin security restrictions, or broken range-request byte headers across WebKitGTK (Linux) and WebView2 (Windows), local cached media files must not be loaded directly via local file path URIs (`file://`).
+
+* The Go backend must spin up a lightweight, local HTTP loopback media handler bound to localhost or integrated directly into Wails' asset server handler.
+* The local media handler must explicitly support HTTP Range Requests (`Accept-Ranges: bytes`, `206 Partial Content`) to ensure smooth HTML5 timeline scrubbing and duration parsing in the web frontend.
+
+### C. Download Lifecycle & Handoff Strategy
+1. **Streaming Phase:** When a user selects an un-cached episode, playback begins immediately via the external audio enclosure URL while a background Go routine initiates the download.
+2. **Partial File Safety:** Background downloads must stream into temporary files with a `.part` extension in the cache directory (e.g., `episode_123.mp3.part`).
+3. **Atomic Handoff:** Once the download completes, the temporary file is renamed atomically to its final extension (e.g., `episode_123.mp3`). The backend signals the frontend, which seamlessly updates the `<audio>` source URL to point to the local asset server endpoint without losing current playback position.
+
+---
+
+## 3. Functional Requirements
 
 ### A. Feed & Subscription Management
 
@@ -44,15 +73,9 @@
 
 * **Direct Selection:** Explicit episode selection (no queueing mechanism; pick, listen, complete).
 
-* **Seek / Scrubbing:** Full timeline seeking support. Speed modification features are explicitly omitted.
+* **Seek / Scrubbing:** Full timeline seeking support via standard HTML5 player controls. Speed modification features are explicitly omitted.
 
-* **Progressive Stream to Cache Transition:**
-
-  * Audio begins playing immediately via HTTP streaming.
-
-  * In the background, the application downloads the audio file into a dedicated local cache directory.
-
-  * Once the download completes, playback switches to the local cached file path seamlessly.
+* **Progressive Stream to Cache Transition:** Handled as detailed in Section 2.C.
 
 ### C. Cache & Data Lifecycle
 
@@ -74,7 +97,9 @@
 
 * **URL Extraction:** Simple one-click clipboard copying for podcast feed URLs and episode audio enclosure URLs.
 
-## 3. Database Schema (SQLite)
+---
+
+## 4. Database Schema (SQLite)
 
 The database schema is strictly normalized and explicit. Dynamic JSON strings or arbitrary BLOB buckets are forbidden.
 
@@ -136,13 +161,15 @@ CREATE INDEX IF NOT EXISTS idx_episodes_podcast_id ON episodes(podcast_id);
 CREATE INDEX IF NOT EXISTS idx_episodes_pub_date ON episodes(pub_date DESC);
 ```
 
-## 4. Wails Bridge & Backend Contract
+---
+
+## 5. Wails Bridge & Backend Contract
 
 The Go application backend should expose a lean service structure (`App` struct) providing thread-safe operations for:
 
 1. **Feed Management:** `ImportOPML(path)`, `ExportOPML(path)`, `SearchITunes(query)`, `Subscribe(url)`, `Unsubscribe(podcastID)`, `RefreshFeeds(podcastID)`, `SetPodcastUserAgent(podcastID, customUA)`.
 
-2. **Media & Cache:** `GetAudioSource(episodeID)` (returns HTTP URL if un-cached, or local file path/asset URL if downloaded), `PurgeCache(scope, targetID)`.
+2. **Media & Cache:** `GetAudioSource(episodeID)` (returns HTTP streaming URL if un-cached, or local asset HTTP URL if downloaded), `PurgeCache(scope, targetID)`.
 
 3. **Playback & State:** `SaveProgress(episodeID, seconds, isCompleted)`, `GetLastPlayed()`.
 
@@ -150,44 +177,64 @@ The Go application backend should expose a lean service structure (`App` struct)
 
 ---
 
-## 5. Agentic Development & Execution Guidelines
+## 6. Agentic Development & Execution Guidelines
 
 These instructions govern any AI agent (e.g., GitHub Copilot, local LLMs via Koboldcpp) working autonomously or semi-autonomously on this codebase.
 
 ### A. Phased Execution Protocol
+
 Development must proceed strictly phase-by-phase. An agent **must not** proceed to a subsequent phase until the current phase's verification criteria are fully satisfied and committed.
 
-* **Phase 1: Core Engine & Storage** (Database migrations, RSS/Atom parser, OPML import/export, User-Agent handler, unit tests).
-* **Phase 2: Media Management & Stream-to-Cache** (Background HTTP downloader, local cache manager, state persistence, unit tests).
+* **Phase 1: Core Engine & Storage** (Database migrations with WAL, RSS/Atom parser, OPML import/export, User-Agent handler, unit tests).
+
+* **Phase 2: Media Management & Stream-to-Cache** (Local HTTP range asset handler, `.part` download pipeline, cache manager, state persistence, unit tests).
+
 * **Phase 3: Wails Integration & Bridge Layer** (Exposing Go services to frontend, IPC bounds validation).
-* **Phase 4: Frontend UI** (Minimalist HTML/CSS/JS interface, player controls, settings modal for User-Agent/Purge).
+
+* **Phase 4: Frontend UI** (Minimalist HTML/CSS/JS interface, HTML5 player controls, settings modal for User-Agent/Purge).
+
 * **Phase 5: Packaging & Cross-Platform Validation** (Verification on Linux and Windows targets).
 
 ### B. Verification & Testing Requirements
+
 * Use standard Go tooling only (`go test ./...`, `go vet`, `golangci-lint` if available).
+
 * Unit tests must cover: RSS feed parsing, schema migrations, state persistence, OPML handling, and HTTP User-Agent header assignment.
+
 * Tests must run and pass cleanly before concluding any execution phase.
+
 * Third-party Go packages must be kept to absolute minimum essential modules (e.g., SQLite driver, Wails runtime). Do not add micro-utility libraries.
 
 ### C. Git & Source Control Conventions
+
 * **Isolated Identity:** All agent commits must use a designated bot author:
+
   ```bash
   git config user.name "Podcasts3000-Builder"
   git config user.email "builder@podcasts3000.local"
   ```
+
 * **Commit Messages:** Follow standard conventional commit format (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`).
+
 * **Clean History:** Atomic commits per task within a phase.
 
 ### D. Audit Trail, Documentation & Synthetic Scars
+
 * **Zero Emoji Policy:** Emojis are strictly prohibited in all logs, documentation, source code comments, and commit messages.
+
 * **Audit Documentation:** Maintain the following files in the project root:
+
   * `CHANGELOG.md`: Human-readable summary of additions and fixes per version.
+
   * `DEVELOPMENT_LOG.md`: Chronological log of agent actions, decisions, and phase completions.
+
   * `SCARS.md` (Synthetic Scars Log): Mandatory log where the agent records any failure, unexpected bug, or edge case encountered during build/test iterations. Format:
+
     ```markdown
     ## [YYYY-MM-DD] Feature/Component Area
     - Issue: Description of what failed or went wrong.
     - Root Cause: Why it failed.
     - Prevention Rule: Concrete rule for the agent to consult in future steps to prevent repeating the mistake.
     ```
+
 * Before beginning any task or phase, the agent **must** read `SCARS.md` to ensure past mistakes are not re-introduced.
