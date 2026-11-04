@@ -35,6 +35,8 @@ The package path starts with `./` (a relative path), not `/.`:
 
 Use `make release` to create `release/podcasts3000-linux-amd64` and `release/podcasts3000-windows-amd64.exe`.
 
+GitHub Actions runs the test, Wails-tagged runtime test, and vet targets on pushes and pull requests. Pushing a `v*` tag builds both release executables and publishes them to a GitHub release.
+
 The Wails frontend source lives exclusively under `cmd/podcasts3000/frontend` and is embedded into the binary. The root `web/` directory is not used and may remain absent.
 
 ## Verify
