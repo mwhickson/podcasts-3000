@@ -53,10 +53,12 @@ func (s *Store) ListEpisodes(ctx context.Context, podcastID int64) ([]Episode, e
 	episodes := make([]Episode, 0)
 	for rows.Next() {
 		var episode Episode
+		var pubDate nullableTime
 		var downloaded, completed, favorite int
-		if err := rows.Scan(&episode.ID, &episode.PodcastID, &episode.GUID, &episode.Title, &episode.Description, &episode.AudioURL, &episode.LocalCachePath, &episode.PubDate, &downloaded, &episode.DurationSeconds, &episode.PositionSeconds, &completed, &favorite, &episode.Notes); err != nil {
+		if err := rows.Scan(&episode.ID, &episode.PodcastID, &episode.GUID, &episode.Title, &episode.Description, &episode.AudioURL, &episode.LocalCachePath, &pubDate, &downloaded, &episode.DurationSeconds, &episode.PositionSeconds, &completed, &favorite, &episode.Notes); err != nil {
 			return nil, err
 		}
+		episode.PubDate = pubDate.value
 		episode.IsDownloaded = downloaded != 0
 		episode.IsCompleted = completed != 0
 		episode.IsFavorite = favorite != 0

@@ -148,8 +148,10 @@ func (s *Store) SaveProgress(ctx context.Context, episodeID int64, seconds int, 
 
 func (s *Store) GetLastPlayed(ctx context.Context) (Episode, error) {
 	var ep Episode
+	var pubDate nullableTime
 	var completed, favorite int
-	err := s.db.QueryRowContext(ctx, `SELECT e.id,e.podcast_id,e.guid,e.title,COALESCE(e.description,''),e.audio_url,COALESCE(e.local_cache_path,''),e.pub_date,e.is_downloaded,e.duration_seconds,ps.position_seconds,ps.is_completed,CASE WHEN f.episode_id IS NULL THEN 0 ELSE 1 END,COALESCE(f.notes,'') FROM playback_state ps JOIN episodes e ON e.id=ps.episode_id LEFT JOIN favorites f ON f.episode_id=e.id ORDER BY ps.last_played_at DESC LIMIT 1`).Scan(&ep.ID, &ep.PodcastID, &ep.GUID, &ep.Title, &ep.Description, &ep.AudioURL, &ep.LocalCachePath, &ep.PubDate, &ep.IsDownloaded, &ep.DurationSeconds, &ep.PositionSeconds, &completed, &favorite, &ep.Notes)
+	err := s.db.QueryRowContext(ctx, `SELECT e.id,e.podcast_id,e.guid,e.title,COALESCE(e.description,''),e.audio_url,COALESCE(e.local_cache_path,''),e.pub_date,e.is_downloaded,e.duration_seconds,ps.position_seconds,ps.is_completed,CASE WHEN f.episode_id IS NULL THEN 0 ELSE 1 END,COALESCE(f.notes,'') FROM playback_state ps JOIN episodes e ON e.id=ps.episode_id LEFT JOIN favorites f ON f.episode_id=e.id ORDER BY ps.last_played_at DESC LIMIT 1`).Scan(&ep.ID, &ep.PodcastID, &ep.GUID, &ep.Title, &ep.Description, &ep.AudioURL, &ep.LocalCachePath, &pubDate, &ep.IsDownloaded, &ep.DurationSeconds, &ep.PositionSeconds, &completed, &favorite, &ep.Notes)
+	ep.PubDate = pubDate.value
 	ep.IsCompleted = completed != 0
 	ep.IsFavorite = favorite != 0
 	return ep, err

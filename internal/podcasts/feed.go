@@ -131,9 +131,12 @@ func parseFeed(data []byte) (Podcast, []Episode, error) {
 		}
 	}
 	p := Podcast{Title: strings.TrimSpace(ch.Title), Description: strings.TrimSpace(description), SiteURL: siteURL, ArtworkURL: artwork}
+	if p.Title == "" {
+		p.Title = "Untitled podcast"
+	}
 	var episodes []Episode
 	for _, item := range ch.Items {
-		audio := item.Enclosure.URL
+		audio := strings.TrimSpace(item.Enclosure.URL)
 		if audio == "" {
 			for _, link := range item.Links {
 				if link.Rel == "enclosure" || strings.HasPrefix(link.Type, "audio/") {
@@ -142,22 +145,23 @@ func parseFeed(data []byte) (Podcast, []Episode, error) {
 				}
 			}
 		}
-		if audio == "" || strings.TrimSpace(item.Title) == "" {
+		title := strings.TrimSpace(item.Title)
+		if audio == "" || title == "" {
 			continue
 		}
 		guid := strings.TrimSpace(item.GUID)
 		if guid == "" {
 			guid = audio
 		}
-		desc := item.Description
+		desc := strings.TrimSpace(item.Description)
 		if desc == "" {
-			desc = item.Summary
+			desc = strings.TrimSpace(item.Summary)
 		}
 		date := item.PubDate
 		if date == "" {
 			date = item.Published
 		}
-		episodes = append(episodes, Episode{GUID: guid, Title: strings.TrimSpace(item.Title), Description: strings.TrimSpace(desc), AudioURL: audio, PubDate: parseDate(date), DurationSeconds: parseDuration(item.Duration)})
+		episodes = append(episodes, Episode{GUID: guid, Title: title, Description: desc, AudioURL: audio, PubDate: parseDate(date), DurationSeconds: parseDuration(item.Duration)})
 	}
 	if len(episodes) == 0 {
 		for _, entry := range doc.Entry {
@@ -168,8 +172,13 @@ func parseFeed(data []byte) (Podcast, []Episode, error) {
 					break
 				}
 			}
-			if audio != "" {
-				episodes = append(episodes, Episode{GUID: entry.ID, Title: entry.Title, Description: entry.Summary, AudioURL: audio, PubDate: parseDate(entry.Published)})
+			title := strings.TrimSpace(entry.Title)
+			if audio != "" && title != "" {
+				guid := strings.TrimSpace(entry.ID)
+				if guid == "" {
+					guid = audio
+				}
+				episodes = append(episodes, Episode{GUID: guid, Title: title, Description: strings.TrimSpace(entry.Summary), AudioURL: audio, PubDate: parseDate(entry.Published)})
 			}
 		}
 	}
@@ -260,9 +269,11 @@ func (s *Store) ListPodcasts(ctx context.Context) ([]Podcast, error) {
 	result := make([]Podcast, 0)
 	for rows.Next() {
 		var p Podcast
-		if err := rows.Scan(&p.ID, &p.FeedURL, &p.Title, &p.Description, &p.SiteURL, &p.ArtworkURL, &p.ArtworkLocalPath, &p.CustomUserAgent, &p.LastRefreshedAt); err != nil {
+		var refreshedAt nullableTime
+		if err := rows.Scan(&p.ID, &p.FeedURL, &p.Title, &p.Description, &p.SiteURL, &p.ArtworkURL, &p.ArtworkLocalPath, &p.CustomUserAgent, &refreshedAt); err != nil {
 			return nil, err
 		}
+		p.LastRefreshedAt = refreshedAt.value
 		result = append(result, p)
 	}
 	return result, rows.Err()

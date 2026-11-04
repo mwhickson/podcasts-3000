@@ -14,3 +14,4 @@
 - Fixed the empty-library state after removing the final podcast.
 - Replaced browser alerts and confirmations with native Wails message dialogs.
 - Fixed affirmative responses from native confirmation dialogs on Linux.
+- Hardened feed loading for missing fields and SQLite date values.

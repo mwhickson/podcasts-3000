@@ -85,3 +85,8 @@ All AI agents working on this codebase MUST read this log prior to executing any
 - Issue: Unsubscribe stopped after replacing browser `confirm()` with a native Wails question dialog.
 - Root Cause: Linux Wails question dialogs return `"Yes"`/`"No"` regardless of the custom button labels, while the binding only treated `"OK"` as affirmative.
 - Prevention Rule: For native question dialogs, use platform-standard Yes/No response handling and accept the documented affirmative response (`"Yes"`; retain `"OK"` compatibility where applicable).
+
+## [2026-11-04] SQLite Date Value Compatibility
+- Issue: Some feeds failed to display because SQLite returned `pub_date` as a string while the driver could not scan it directly into `*time.Time`.
+- Root Cause: SQLite DATETIME columns can contain NULL, text, bytes, or native time values depending on how data was written.
+- Prevention Rule: Scan stored dates through a tolerant nullable-date adapter, treating missing or malformed values as absent. Feed parsing must also supply safe title, GUID, description, and duration defaults when source fields are missing.
