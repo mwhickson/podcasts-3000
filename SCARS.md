@@ -30,3 +30,13 @@ All AI agents working on this codebase MUST read this log prior to executing any
 - Issue: Directing the HTML5 player to a partially downloaded local file caused playback to terminate early when the player reached the temporary file's end boundary.
 - Root Cause: The app pointed to the cached file before the background HTTP download completed.
 - Prevention Rule: Downloads must be saved with a `.part` extension until completed 100%. Only switch the frontend `<audio>` target to the local file URL after an atomic file rename from `.part` to `.mp3` occurs.
+
+## [2026-11-03] Feed XML Model and Null Database Values
+- Issue: Initial feed parsing conflicted on repeated XML link elements, and scanning nullable custom User-Agent values into strings failed.
+- Root Cause: `encoding/xml` requires distinct field paths for repeated tags, and SQLite NULL cannot scan directly into a Go string.
+- Prevention Rule: Model repeated XML elements with one slice and scan nullable database columns through `sql.NullString` or `COALESCE`.
+
+## [2026-11-03] JSON and XML Struct Tags
+- Issue: Initial grouped struct tags caused `go vet` failures because one tag was applied to several fields.
+- Root Cause: Go struct tags are per-field and cannot be safely grouped when fields have different names.
+- Prevention Rule: Declare explicit tags on every serialized field and run `go vet ./...` after model changes.
