@@ -17,3 +17,5 @@
 - Refactored the frontend UX: search results now use a closable sidebar sub-view, episode actions are compact pill controls, OPML uses native Wails dialogs, and active podcast artwork plus a fixed player bar are presented consistently.
 - Added individual podcast unsubscribe with cache and `.part` file cleanup, cascading database deletion, UI confirmation, and focused tests.
 - Fixed final-unsubscribe empty-list handling by returning and consuming empty arrays instead of null.
+- Replaced all frontend messageboxes with native Wails confirmation, error, and information dialogs.
+- Fixed native confirmation response handling so unsubscribe and purge actions proceed on Linux Wails dialogs.

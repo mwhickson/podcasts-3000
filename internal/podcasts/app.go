@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -56,6 +57,44 @@ func (a *App) ExportOPMLDialog() error {
 		return err
 	}
 	return a.ExportOPML(path)
+}
+func (a *App) Confirm(message string) (bool, error) {
+	response, err := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+		Type:          runtime.QuestionDialog,
+		Title:         "Podcasts 3000",
+		Message:       message,
+		Buttons:       []string{"Yes", "No"},
+		DefaultButton: "Yes",
+		CancelButton:  "No",
+	})
+	return isAffirmativeDialogResponse(response), err
+}
+
+func isAffirmativeDialogResponse(response string) bool {
+	switch strings.ToLower(strings.TrimSpace(response)) {
+	case "yes", "ok":
+		return true
+	default:
+		return false
+	}
+}
+func (a *App) ShowError(message string) error {
+	_, err := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+		Type:    runtime.ErrorDialog,
+		Title:   "Podcasts 3000",
+		Message: message,
+		Buttons: []string{"OK"},
+	})
+	return err
+}
+func (a *App) ShowInfo(message string) error {
+	_, err := runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+		Type:    runtime.InfoDialog,
+		Title:   "Podcasts 3000",
+		Message: message,
+		Buttons: []string{"OK"},
+	})
+	return err
 }
 func (a *App) Subscribe(url string) (Podcast, error) {
 	return a.Store.Subscribe(context.Background(), url)

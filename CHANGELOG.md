@@ -12,3 +12,5 @@
 - Refined the Wails UI with isolated search results, compact episode actions, native OPML dialogs, artwork headers, and a fixed player bar.
 - Added podcast unsubscribe actions that remove the subscription and all associated cached and partial media files.
 - Fixed the empty-library state after removing the final podcast.
+- Replaced browser alerts and confirmations with native Wails message dialogs.
+- Fixed affirmative responses from native confirmation dialogs on Linux.

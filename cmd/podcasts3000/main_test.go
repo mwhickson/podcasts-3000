@@ -43,4 +43,15 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if !strings.Contains(string(app), `(await App.ListPodcasts()) || []`) {
 		t.Fatal("frontend does not normalize an empty podcast response")
 	}
+	if strings.Contains(string(app), "alert(") || strings.Contains(string(app), "confirm(") {
+		t.Fatal("frontend still uses browser messageboxes")
+	}
+	for _, method := range []string{"Confirm", "ShowError", "ShowInfo"} {
+		if !strings.Contains(string(app), "App."+method) {
+			t.Fatalf("frontend does not use native App.%s dialog binding", method)
+		}
+	}
+	if !strings.Contains(string(app), `if (!(await confirmAction("Unsubscribe and remove all downloaded episodes for this podcast?"))) return;`) {
+		t.Fatal("unsubscribe action does not gate deletion on native confirmation")
+	}
 }

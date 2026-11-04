@@ -7,6 +7,13 @@ const escapeHTML = (value) => {
   element.textContent = value || "";
   return element.innerHTML;
 };
+const messageText = (error) => error instanceof Error ? error.message : String(error);
+const showError = (error) => App.ShowError(messageText(error)).catch(console.error);
+const confirmAction = (message) => App.Confirm(message).catch((error) => {
+  console.error(error);
+  showError(error);
+  return false;
+});
 
 async function loadPodcasts() {
   const podcasts = (await App.ListPodcasts()) || [];
@@ -19,14 +26,14 @@ async function loadPodcasts() {
   document.querySelectorAll("[data-purge-podcast]").forEach((button) => {
     button.onclick = async (event) => {
       event.stopPropagation();
-      if (confirm("Delete downloads for this podcast?")) await App.PurgeCache("podcast", Number(button.dataset.purgePodcast));
+      if (await confirmAction("Delete downloads for this podcast?")) await App.PurgeCache("podcast", Number(button.dataset.purgePodcast));
     };
   });
   document.querySelectorAll("[data-unsubscribe]").forEach((button) => {
     button.onclick = async (event) => {
       event.stopPropagation();
       const podcastID = Number(button.dataset.unsubscribe);
-      if (!confirm("Unsubscribe and remove all downloaded episodes for this podcast?")) return;
+      if (!(await confirmAction("Unsubscribe and remove all downloaded episodes for this podcast?"))) return;
       try {
         await App.Unsubscribe(podcastID);
         if (state.podcast?.id === podcastID) {
@@ -37,7 +44,7 @@ async function loadPodcasts() {
         }
         await loadPodcasts();
       } catch (error) {
-        alert(error);
+        showError(error);
       }
     };
   });
@@ -72,7 +79,7 @@ async function selectPodcast(id) {
     };
   });
   document.querySelectorAll("[data-purge-episode]").forEach((button) => {
-    button.onclick = async () => { if (confirm("Delete this downloaded episode?")) { await App.PurgeCache("episode", Number(button.dataset.purgeEpisode)); await selectPodcast(id); } };
+    button.onclick = async () => { if (await confirmAction("Delete this downloaded episode?")) { await App.PurgeCache("episode", Number(button.dataset.purgeEpisode)); await selectPodcast(id); } };
   });
   await loadPodcasts();
 }
@@ -92,7 +99,7 @@ $("#subscribe").onsubmit = async (event) => {
     $("#feed-url").value = "";
     await loadPodcasts();
   } catch (error) {
-    alert(error);
+    showError(error);
   }
 };
 
@@ -101,7 +108,7 @@ $("#refresh-all").onclick = async () => {
   await loadPodcasts();
   if (state.podcast) await selectPodcast(state.podcast.id);
 };
-$("#purge-all").onclick = async () => { if (confirm("Delete all downloaded media?")) await App.PurgeCache("all", 0); };
+$("#purge-all").onclick = async () => { if (await confirmAction("Delete all downloaded media?")) await App.PurgeCache("all", 0); };
 $("#itunes-search").onsubmit = async (event) => {
   event.preventDefault();
   try {
@@ -114,11 +121,11 @@ $("#itunes-search").onsubmit = async (event) => {
     document.querySelectorAll("[data-search-feed]").forEach((button) => {
       button.onclick = async () => { await App.Subscribe(button.dataset.searchFeed); $("#search-results").replaceChildren(); await loadPodcasts(); };
     });
-  } catch (error) { alert(error); }
+  } catch (error) { showError(error); }
 };
 $("#close-search").onclick = () => { $("#search-view").hidden = true; $("#podcasts").hidden = false; $("#search-results").replaceChildren(); $("#search-query").value = ""; };
-$("#import-opml").onclick = async () => { try { await App.ImportOPMLDialog(); await loadPodcasts(); } catch (error) { alert(error); } };
-$("#export-opml").onclick = async () => { try { await App.ExportOPMLDialog(); } catch (error) { alert(error); } };
+$("#import-opml").onclick = async () => { try { await App.ImportOPMLDialog(); await loadPodcasts(); } catch (error) { showError(error); } };
+$("#export-opml").onclick = async () => { try { await App.ExportOPMLDialog(); await App.ShowInfo("OPML subscriptions exported."); } catch (error) { showError(error); } };
 
 $("#audio").addEventListener("timeupdate", () => {
   const episode = state.episodes.find((item) => item.title === $("#now-playing").textContent);
@@ -131,4 +138,4 @@ $("#audio").addEventListener("ended", () => {
   if (episode) App.SaveProgress(episode.id, Math.floor($("#audio").duration), true);
 });
 
-loadPodcasts().catch((error) => { $("#episodes").innerHTML = `<p class="muted">${escapeHTML(String(error))}</p>`; });
+loadPodcasts().catch((error) => { $("#episodes").innerHTML = `<p class="muted">${escapeHTML(messageText(error))}</p>`; showError(error); });

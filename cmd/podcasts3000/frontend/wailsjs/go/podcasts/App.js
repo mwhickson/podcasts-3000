@@ -62,3 +62,12 @@ export async function PurgeCache(scope, targetID) {
 export async function Unsubscribe(podcastID) {
   return (await waitForBackend()).Unsubscribe(podcastID);
 }
+export async function Confirm(message) {
+  return (await waitForBackend()).Confirm(message);
+}
+export async function ShowError(message) {
+  return (await waitForBackend()).ShowError(message);
+}
+export async function ShowInfo(message) {
+  return (await waitForBackend()).ShowInfo(message);
+}

@@ -75,3 +75,13 @@ All AI agents working on this codebase MUST read this log prior to executing any
 - Issue: After unsubscribing the final podcast, the frontend received `null` and failed with `TypeError: null is not an object (evaluating 'podcasts.map')`.
 - Root Cause: A nil Go slice serializes through Wails as JSON `null` rather than an empty array.
 - Prevention Rule: Collection-returning backend methods must initialize empty slices, and frontend collection consumers must normalize unexpected null responses to `[]`.
+
+## [2026-11-04] Native Wails Messageboxes
+- Issue: Browser `alert()` and `confirm()` calls produced inconsistent webview messageboxes instead of native desktop dialogs.
+- Root Cause: Frontend code used browser globals even though Wails provides platform-native message dialogs through `runtime.MessageDialog`.
+- Prevention Rule: Use Wails-native UI APIs whenever possible. Route confirmations, errors, and informational messages through bound Go methods backed by `runtime.MessageDialog`; do not add browser `alert`, `confirm`, or `prompt` calls.
+
+## [2026-11-04] Native Confirmation Response Labels
+- Issue: Unsubscribe stopped after replacing browser `confirm()` with a native Wails question dialog.
+- Root Cause: Linux Wails question dialogs return `"Yes"`/`"No"` regardless of the custom button labels, while the binding only treated `"OK"` as affirmative.
+- Prevention Rule: For native question dialogs, use platform-standard Yes/No response handling and accept the documented affirmative response (`"Yes"`; retain `"OK"` compatibility where applicable).
