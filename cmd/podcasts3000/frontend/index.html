@@ -10,14 +10,16 @@
   <header><h1>Podcasts 3000</h1><div class="toolbar"><button id="refresh-all">Refresh all</button><button id="purge-all">Purge all downloads</button></div></header>
   <main>
     <aside>
-      <form id="subscribe"><input id="feed-url" type="url" required placeholder="RSS or Atom feed URL"><button>Subscribe</button></form>
-      <form id="itunes-search"><input id="search-query" required placeholder="Search iTunes podcasts"><button>Search</button></form>
+      <div class="sidebar-controls">
+        <form id="subscribe"><input id="feed-url" type="url" required placeholder="RSS or Atom feed URL"><button>Subscribe</button></form>
+        <form id="itunes-search"><input id="search-query" required placeholder="Search iTunes podcasts"><button>Search</button></form>
+        <details><summary>OPML</summary><div class="button-row"><button id="import-opml" type="button">Import subscriptions</button><button id="export-opml" type="button">Export subscriptions</button></div></details>
+      </div>
       <section id="search-view" hidden>
         <div class="subview-heading"><strong>Search results</strong><button id="close-search" class="icon-button" type="button" aria-label="Close search">✕ Close Search</button></div>
         <section id="search-results"></section>
       </section>
       <section id="podcasts"></section>
-      <details><summary>OPML</summary><div class="button-row"><button id="import-opml" type="button">Import subscriptions</button><button id="export-opml" type="button">Export subscriptions</button></div></details>
     </aside>
     <section class="content"><div id="active-podcast"></div><div id="episode-toolbar" class="episode-toolbar" hidden><label class="episode-search">Search episodes<input id="episode-search" type="search" placeholder="Title or description"></label><label class="unplayed-filter"><input id="unplayed-only" type="checkbox"> Unplayed only</label><label>Sort<select id="episode-sort"><option value="pub-desc" selected>Publication date, newest</option><option value="pub-asc">Publication date, oldest</option><option value="name-asc">Name, A-Z</option><option value="name-desc">Name, Z-A</option></select></label></div><div id="episodes"><p class="muted">Subscribe to a feed to get started.</p></div></section>
   </main>

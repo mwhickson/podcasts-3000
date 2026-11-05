@@ -36,6 +36,9 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if !strings.Contains(string(index), `id="episode-toolbar"`) || !strings.Contains(string(index), `id="unplayed-only"`) || !strings.Contains(string(index), `id="episode-sort"`) {
 		t.Fatal("frontend is missing episode filtering and sorting toolbar controls")
 	}
+	if !strings.Contains(string(index), `id="import-opml"`) || !strings.Contains(string(index), `id="export-opml"`) {
+		t.Fatal("frontend is missing OPML controls")
+	}
 	app, err = frontend.ReadFile("frontend/app.js")
 	if err != nil {
 		t.Fatal(err)

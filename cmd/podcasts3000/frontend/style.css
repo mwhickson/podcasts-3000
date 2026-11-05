@@ -59,6 +59,7 @@ aside {
   border-right: 1px solid #293039;
   background: #14181c;
 }
+.sidebar-controls { flex: 0 0 auto; }
 aside form { display: flex; gap: .45rem; margin: 0 0 .75rem; }
 aside form input { min-width: 0; flex: 1; }
 .content { width: 100%; max-width: 1050px; min-height: 0; overflow: auto; padding: 1.5rem 2rem 7rem; }
@@ -76,7 +77,7 @@ aside form input { min-width: 0; flex: 1; }
   padding: .65rem .75rem;
   border: 1px solid #293039;
   border-radius: 9px;
-  background: rgba(23, 27, 32, .96);
+  background: #171b20;
   box-shadow: 0 4px 14px rgba(0, 0, 0, .15);
 }
 .episode-toolbar label { display: flex; align-items: center; gap: .4rem; color: #aeb8c3; font-size: .85rem; }
