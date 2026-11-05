@@ -6,7 +6,7 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: #101214; }
+body { overflow: hidden; margin: 0; background: #101214; }
 button, input, textarea { font: inherit; }
 button {
   border: 1px solid #3a4149;
@@ -30,6 +30,9 @@ input, textarea {
 textarea { min-height: 3rem; resize: vertical; }
 
 header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -44,17 +47,24 @@ h1 { margin: 0; font-size: 1.15rem; letter-spacing: .02em; }
 main {
   display: grid;
   grid-template-columns: 310px minmax(0, 1fr);
-  min-height: calc(100vh - 126px);
+  height: calc(100vh - 58px);
+  min-height: 0;
+  overflow: hidden;
 }
 aside {
-  overflow: auto;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
   padding: 1rem;
   border-right: 1px solid #293039;
   background: #14181c;
 }
 aside form { display: flex; gap: .45rem; margin: 0 0 .75rem; }
 aside form input { min-width: 0; flex: 1; }
-.content { width: 100%; max-width: 1050px; padding: 1.5rem 2rem 7rem; }
+.content { width: 100%; max-width: 1050px; min-height: 0; overflow: auto; padding: 1.5rem 2rem 7rem; }
+#podcasts { min-height: 0; flex: 1; overflow: auto; }
+#search-view { min-height: 0; flex: 1; overflow: auto; }
+#search-results { min-height: 0; }
 .episode-toolbar {
   position: sticky;
   top: 0;
@@ -181,7 +191,7 @@ audio { width: 100%; }
 
 @media (max-width: 760px) {
   header { align-items: flex-start; flex-direction: column; }
-  main { grid-template-columns: 1fr; }
+  main { grid-template-columns: 1fr; height: calc(100vh - 100px); }
   aside { border-right: 0; border-bottom: 1px solid #293039; }
   .content { padding: 1rem 1rem 7rem; }
   .episode-heading { align-items: flex-start; flex-direction: column; }
