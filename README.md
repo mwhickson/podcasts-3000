@@ -55,3 +55,7 @@ make runtime-test
 This validates the production Wails package, embedded assets, and the bound `podcasts.App` namespace. A full GUI interaction test still requires a graphical desktop session; manually verify subscribing with a reachable RSS feed after launching `make run`.
 
 The backend is organized around `internal/podcasts.App` and is bound directly to the embedded Wails frontend. No Node toolchain is required.
+
+## Disclaimer
+
+This application was produced using AI (Gemini, Copilot).
