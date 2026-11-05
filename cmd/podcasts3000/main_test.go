@@ -75,6 +75,9 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if !strings.Contains(string(app), "App.UpdateDuration") || !strings.Contains(string(app), "audio.duration") {
 		t.Fatal("frontend does not persist confirmed playback duration")
 	}
+	if !strings.Contains(string(app), "play(lastPlayed.id, Math.max(0, lastPlayed.positionSeconds || 0), false)") {
+		t.Fatal("frontend restores startup playback without auto-starting")
+	}
 	if !strings.Contains(string(app), `if (!(await confirmAction("Unsubscribe and remove all downloaded episodes for this podcast?"))) return;`) {
 		t.Fatal("unsubscribe action does not gate deletion on native confirmation")
 	}

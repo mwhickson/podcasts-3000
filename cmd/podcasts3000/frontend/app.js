@@ -199,7 +199,7 @@ $("#episode-sort").addEventListener("change", (event) => {
   bindEpisodeActions(state.podcast?.id);
 });
 
-async function play(id, position = 0) {
+async function play(id, position = 0, autoStart = true) {
   const episode = state.episodes.find((item) => item.id === id);
   if (!episode) return;
   try {
@@ -223,10 +223,14 @@ async function play(id, position = 0) {
     };
     $("#audio").addEventListener("loadedmetadata", setPosition, { once: true });
     setPosition();
-    await $("#audio").play().catch((error) => {
-      console.warn("Audio autoplay was not permitted; playback is ready to start.", error);
-    });
-    setStatus(`Playing: ${episode.title}`, "success");
+    if (autoStart) {
+      await $("#audio").play().catch((error) => {
+        console.warn("Audio autoplay was not permitted; playback is ready to start.", error);
+      });
+      setStatus(`Playing: ${episode.title}`, "success");
+    } else {
+      setStatus(`Ready to play: ${episode.title}`, "success");
+    }
   } catch (error) {
     state.episode = null;
     $("#audio").removeAttribute("src");
@@ -310,7 +314,7 @@ async function restoreLastPlayed() {
     const lastPlayed = await App.GetLastPlayed();
     if (!lastPlayed?.id) return;
     await selectPodcast(lastPlayed.podcastId);
-    await play(lastPlayed.id, Math.max(0, lastPlayed.positionSeconds || 0));
+    await play(lastPlayed.id, Math.max(0, lastPlayed.positionSeconds || 0), false);
   } catch (error) {
     console.warn("Unable to restore last played episode; using default player state.", error);
     state.episode = null;

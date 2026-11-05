@@ -26,3 +26,4 @@
 - Replaced informational/error messageboxes with status-bar feedback and added progress messages for retrieval and playback buffering.
 - Added episode metadata display and mark played/unplayed controls integrated with the unplayed filter.
 - Added `itunes:duration` parsing and persistence of confirmed audio durations during playback.
+- Adjusted startup playback restoration to select and seek without auto-starting audio.

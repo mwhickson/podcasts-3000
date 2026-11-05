@@ -118,3 +118,8 @@ All AI agents working on this codebase MUST read this log prior to executing any
 - Issue: Episode durations were often displayed as unknown even when podcast feeds supplied them.
 - Root Cause: Many feeds use the namespaced `itunes:duration` element, while playback metadata was not persisted back to the episode record.
 - Prevention Rule: Parse standard and `itunes:duration` feed values, retain unknown as zero, and update positive durations from confirmed audio metadata during playback.
+
+## [2026-11-04] Startup Playback Autostart
+- Issue: Restoring the last played episode started audio automatically when the application opened.
+- Root Cause: Startup restoration reused the normal playback action, which calls the browser audio `play()` method.
+- Prevention Rule: Startup may restore the source and saved position, but must pass an explicit no-autostart path. User-initiated playback remains the only action that starts audio.
