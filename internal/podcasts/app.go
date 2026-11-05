@@ -36,16 +36,19 @@ func (a *App) ListEpisodes(podcastID int64) ([]Episode, error) {
 }
 
 func (a *App) ImportOPML(path string) error { return a.Store.ImportOPML(context.Background(), path) }
+func (a *App) ImportOPMLResults(path string) ([]OPMLImportResult, error) {
+	return a.Store.ImportOPMLResults(context.Background(), path)
+}
 func (a *App) ExportOPML(path string) error { return a.Store.ExportOPML(context.Background(), path) }
-func (a *App) ImportOPMLDialog() error {
+func (a *App) ImportOPMLDialog() ([]OPMLImportResult, error) {
 	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
 		Title:   "Import podcast subscriptions",
 		Filters: []runtime.FileFilter{{DisplayName: "OPML files", Pattern: "*.opml;*.xml"}},
 	})
 	if err != nil || path == "" {
-		return err
+		return nil, err
 	}
-	return a.ImportOPML(path)
+	return a.ImportOPMLResults(path)
 }
 func (a *App) ExportOPMLDialog() error {
 	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{

@@ -47,6 +47,9 @@ export async function SearchITunes(query) {
 export async function ImportOPML(path) {
   return (await waitForBackend()).ImportOPML(path);
 }
+export async function ImportOPMLResults(path) {
+  return (await waitForBackend()).ImportOPMLResults(path);
+}
 export async function ExportOPML(path) {
   return (await waitForBackend()).ExportOPML(path);
 }

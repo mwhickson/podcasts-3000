@@ -78,6 +78,9 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if !strings.Contains(string(app), "App.UpdateDuration") || !strings.Contains(string(app), "audio.duration") {
 		t.Fatal("frontend does not persist confirmed playback duration")
 	}
+	if !strings.Contains(string(app), "const failures = (results || []).filter((result) => result.error)") || !strings.Contains(string(app), "await loadPodcasts();") {
+		t.Fatal("frontend does not refresh subscriptions or report per-feed OPML failures")
+	}
 	if !strings.Contains(string(app), "window.addEventListener(\"resize\"") || !strings.Contains(string(app), "setSidebarWidth") {
 		t.Fatal("frontend does not update layout on resize or support pane resizing")
 	}

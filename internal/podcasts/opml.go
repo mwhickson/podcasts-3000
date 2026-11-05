@@ -22,6 +22,10 @@ type opmlOutline struct {
 	HTMLURL  string        `xml:"htmlUrl,attr"`
 	Children []opmlOutline `xml:"outline"`
 }
+type OPMLImportResult struct {
+	FeedURL string `json:"feedUrl"`
+	Error   string `json:"error,omitempty"`
+}
 
 func flattenOutlines(outlines []opmlOutline) []opmlOutline {
 	var result []opmlOutline
@@ -35,20 +39,28 @@ func flattenOutlines(outlines []opmlOutline) []opmlOutline {
 }
 
 func (s *Store) ImportOPML(ctx context.Context, path string) error {
+	_, err := s.ImportOPMLResults(ctx, path)
+	return err
+}
+
+func (s *Store) ImportOPMLResults(ctx context.Context, path string) ([]OPMLImportResult, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return fmt.Errorf("read OPML: %w", err)
+		return nil, fmt.Errorf("read OPML: %w", err)
 	}
 	var doc opmlDocument
 	if err = xml.Unmarshal(data, &doc); err != nil {
-		return fmt.Errorf("parse OPML: %w", err)
+		return nil, fmt.Errorf("parse OPML: %w", err)
 	}
+	results := make([]OPMLImportResult, 0)
 	for _, outline := range flattenOutlines(doc.Body.Outlines) {
 		if _, err = s.Subscribe(ctx, outline.XMLURL); err != nil {
-			return fmt.Errorf("import %q: %w", outline.XMLURL, err)
+			results = append(results, OPMLImportResult{FeedURL: outline.XMLURL, Error: err.Error()})
+			continue
 		}
+		results = append(results, OPMLImportResult{FeedURL: outline.XMLURL})
 	}
-	return nil
+	return results, nil
 }
 
 func (s *Store) ExportOPML(ctx context.Context, path string) error {

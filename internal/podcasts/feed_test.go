@@ -63,6 +63,7 @@ func TestOPMLRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer store.Close()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`<rss><channel><title>OPML podcast</title></channel></rss>`))
@@ -77,6 +78,42 @@ func TestOPMLRoundTrip(t *testing.T) {
 	}
 	if _, err = os.Stat(path); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestImportOPMLContinuesAfterFailedSubscription(t *testing.T) {
+	dir := t.TempDir()
+	store, err := OpenStore(filepath.Join(dir, "podcasts.db"), filepath.Join(dir, "media"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/bad" {
+			http.Error(w, "unavailable", http.StatusBadGateway)
+			return
+		}
+		_, _ = w.Write([]byte(`<rss><channel><title>Imported podcast</title></channel></rss>`))
+	}))
+	defer server.Close()
+	path := filepath.Join(dir, "feeds.opml")
+	opml := `<opml version="2.0"><body><outline type="rss" xmlUrl="` + server.URL + `/bad"/><outline type="rss" xmlUrl="` + server.URL + `/good"/></body></opml>`
+	if err = os.WriteFile(path, []byte(opml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	results, err := store.ImportOPMLResults(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 2 || results[0].Error == "" || results[1].Error != "" {
+		t.Fatalf("unexpected import results: %#v", results)
+	}
+	podcasts, err := store.ListPodcasts(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(podcasts) != 1 || podcasts[0].Title != "Imported podcast" {
+		t.Fatalf("podcasts after import = %#v", podcasts)
 	}
 }
 

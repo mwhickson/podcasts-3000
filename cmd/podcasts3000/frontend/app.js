@@ -338,7 +338,20 @@ $("#itunes-search").onsubmit = async (event) => {
   } catch (error) { showError(error); }
 };
 $("#close-search").onclick = () => { $("#search-view").hidden = true; $("#podcasts").hidden = false; $("#search-results").replaceChildren(); $("#search-query").value = ""; };
-$("#import-opml").onclick = async () => { try { setStatus("Importing subscriptions…"); await App.ImportOPMLDialog(); await loadPodcasts(); setStatus("Subscriptions imported", "success"); } catch (error) { showError(error); } };
+$("#import-opml").onclick = async () => {
+  try {
+    setStatus("Importing subscriptions…");
+    const results = await App.ImportOPMLDialog();
+    await loadPodcasts();
+    const failures = (results || []).filter((result) => result.error);
+    if (failures.length) {
+      const details = failures.map((result) => `${result.feedUrl}: ${result.error}`).join(" | ");
+      setStatus(`Imported ${results.length - failures.length} subscription${results.length - failures.length === 1 ? "" : "s"}; ${failures.length} failed: ${details}`, "error");
+    } else {
+      setStatus(`Imported ${results?.length || 0} subscription${results?.length === 1 ? "" : "s"}`, "success");
+    }
+  } catch (error) { showError(error); }
+};
 $("#export-opml").onclick = async () => { try { setStatus("Exporting subscriptions…"); await App.ExportOPMLDialog(); setStatus("Subscriptions exported", "success"); } catch (error) { showError(error); } };
 
 $("#audio").addEventListener("timeupdate", () => {
