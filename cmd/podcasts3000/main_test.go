@@ -30,8 +30,8 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if strings.Contains(string(index), `id="opml-path"`) {
 		t.Fatal("frontend still exposes a raw OPML path input")
 	}
-	if !strings.Contains(string(index), `id="active-podcast"`) || !strings.Contains(string(index), `class="player"`) {
-		t.Fatal("frontend is missing artwork header or fixed player regions")
+	if !strings.Contains(string(index), `id="active-podcast"`) || !strings.Contains(string(index), `class="player"`) || !strings.Contains(string(index), `id="status-bar"`) {
+		t.Fatal("frontend is missing artwork header, player, or status regions")
 	}
 	if !strings.Contains(string(index), `id="episode-toolbar"`) || !strings.Contains(string(index), `id="unplayed-only"`) || !strings.Contains(string(index), `id="episode-sort"`) {
 		t.Fatal("frontend is missing episode filtering and sorting toolbar controls")
@@ -49,7 +49,7 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if strings.Contains(string(app), "alert(") || strings.Contains(string(app), "confirm(") {
 		t.Fatal("frontend still uses browser messageboxes")
 	}
-	for _, method := range []string{"Confirm", "ShowError", "ShowInfo"} {
+	for _, method := range []string{"Confirm"} {
 		if !strings.Contains(string(app), "App."+method) {
 			t.Fatalf("frontend does not use native App.%s dialog binding", method)
 		}
@@ -62,6 +62,9 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	}
 	if !strings.Contains(string(app), "titleMatch") || !strings.Contains(string(app), "episode.isCompleted") || !strings.Contains(string(app), "pub-desc") {
 		t.Fatal("frontend does not implement episode search, unplayed filtering, and publication sorting")
+	}
+	if !strings.Contains(string(app), "setStatus") || !strings.Contains(string(app), "Buffering episode") || !strings.Contains(string(app), "Loading episodes") {
+		t.Fatal("frontend does not report action progress through the status bar")
 	}
 	if !strings.Contains(string(app), `if (!(await confirmAction("Unsubscribe and remove all downloaded episodes for this podcast?"))) return;`) {
 		t.Fatal("unsubscribe action does not gate deletion on native confirmation")

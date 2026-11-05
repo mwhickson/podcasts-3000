@@ -18,3 +18,4 @@
 - Converted HTML podcast and episode descriptions to readable plain text.
 - Restored the last played episode and saved playback position when starting the application or switching episodes.
 - Added sticky episode search, unplayed filtering, and name/publication-date sorting controls.
+- Added a persistent status bar for progress, success, and failure feedback.

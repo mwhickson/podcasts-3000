@@ -22,6 +22,7 @@
     <section class="content"><div id="active-podcast"></div><div id="episode-toolbar" class="episode-toolbar" hidden><label class="episode-search">Search episodes<input id="episode-search" type="search" placeholder="Title or description"></label><label class="unplayed-filter"><input id="unplayed-only" type="checkbox"> Unplayed only</label><label>Sort<select id="episode-sort"><option value="pub-desc" selected>Publication date, newest</option><option value="pub-asc">Publication date, oldest</option><option value="name-asc">Name, A-Z</option><option value="name-desc">Name, Z-A</option></select></label></div><div id="episodes"><p class="muted">Subscribe to a feed to get started.</p></div></section>
   </main>
   <footer class="player"><strong id="now-playing">Nothing playing</strong><audio id="audio" controls preload="metadata"></audio></footer>
+  <footer id="status-bar" class="status-bar" role="status" aria-live="polite">Ready</footer>
   <dialog id="settings"><form method="dialog"><h2>Settings</h2><label>Podcast User-Agent<input id="custom-ua" type="text"></label><button value="cancel">Cancel</button><button id="save-settings" value="default">Save</button></form></dialog>
   <script type="module" src="/app.js"></script>
 </body>

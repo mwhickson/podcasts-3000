@@ -104,3 +104,8 @@ All AI agents working on this codebase MUST read this log prior to executing any
 ## [2026-11-04] Episode Filter State
 - Issue: Episode search, played-state filtering, and sorting need to remain scoped to the currently selected podcast.
 - Prevention Rule: Keep these controls in a sticky episode toolbar, reset them on startup and podcast selection, prefer title matches over description matches, and default to newest publication date first.
+
+## [2026-11-04] Status Bar Action Feedback
+- Issue: Network and other variable-length actions appeared inactive while the application was working.
+- Root Cause: Informational and error feedback relied on modal messageboxes or was absent during asynchronous operations.
+- Prevention Rule: Use the persistent status bar for progress, success, and failure messages. Reserve native dialogs for destructive confirmations.

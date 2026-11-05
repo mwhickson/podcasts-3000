@@ -8,7 +8,15 @@ const escapeHTML = (value) => {
   return element.innerHTML;
 };
 const messageText = (error) => error instanceof Error ? error.message : String(error);
-const showError = (error) => App.ShowError(messageText(error)).catch(console.error);
+const setStatus = (message, type = "") => {
+  const status = $("#status-bar");
+  status.textContent = message;
+  status.className = `status-bar${type ? ` ${type}` : ""}`;
+};
+const showError = (error) => {
+  console.error(error);
+  setStatus(`Error: ${messageText(error)}`, "error");
+};
 const confirmAction = (message) => App.Confirm(message).catch((error) => {
   console.error(error);
   showError(error);
@@ -56,21 +64,39 @@ const bindEpisodeActions = (podcastID) => {
     };
   });
   document.querySelectorAll("[data-favorite]").forEach((button) => {
-    button.onclick = async () => { await App.ToggleFavorite(Number(button.dataset.favorite)); await selectPodcast(podcastID); };
+    button.onclick = async () => {
+      try {
+        await App.ToggleFavorite(Number(button.dataset.favorite));
+        setStatus("Favorite updated", "success");
+        await selectPodcast(podcastID);
+      } catch (error) { showError(error); }
+    };
   });
   document.querySelectorAll("[data-save-note]").forEach((button) => {
     button.onclick = async () => {
       const episodeID = Number(button.dataset.saveNote);
-      await App.SaveNote(episodeID, document.querySelector(`[data-note="${episodeID}"]`).value);
-      await selectPodcast(podcastID);
+      try {
+        await App.SaveNote(episodeID, document.querySelector(`[data-note="${episodeID}"]`).value);
+        setStatus("Note saved", "success");
+        await selectPodcast(podcastID);
+      } catch (error) { showError(error); }
     };
   });
   document.querySelectorAll("[data-purge-episode]").forEach((button) => {
-    button.onclick = async () => { if (await confirmAction("Delete this downloaded episode?")) { await App.PurgeCache("episode", Number(button.dataset.purgeEpisode)); await selectPodcast(podcastID); } };
+    button.onclick = async () => {
+      if (!(await confirmAction("Delete this downloaded episode?"))) return;
+      try {
+        setStatus("Purging episode download…");
+        await App.PurgeCache("episode", Number(button.dataset.purgeEpisode));
+        setStatus("Episode download purged", "success");
+        await selectPodcast(podcastID);
+      } catch (error) { showError(error); }
+    };
   });
 };
 
 async function loadPodcasts() {
+  setStatus("Loading subscriptions…");
   const podcasts = (await App.ListPodcasts()) || [];
   $("#podcasts").innerHTML = podcasts.map((podcast) =>
     `<div class="podcast ${state.podcast?.id === podcast.id ? "active" : ""}" data-id="${podcast.id}"><span class="podcast-name">${escapeHTML(podcast.title)}</span><span class="podcast-actions"><button class="compact-button" data-purge-podcast="${podcast.id}" title="Purge this podcast's downloads">Purge</button><button class="compact-button" data-unsubscribe="${podcast.id}" title="Unsubscribe from this podcast">Unsubscribe</button></span></div>`
@@ -81,7 +107,12 @@ async function loadPodcasts() {
   document.querySelectorAll("[data-purge-podcast]").forEach((button) => {
     button.onclick = async (event) => {
       event.stopPropagation();
-      if (await confirmAction("Delete downloads for this podcast?")) await App.PurgeCache("podcast", Number(button.dataset.purgePodcast));
+      if (!(await confirmAction("Delete downloads for this podcast?"))) return;
+      try {
+        setStatus("Purging podcast downloads…");
+        await App.PurgeCache("podcast", Number(button.dataset.purgePodcast));
+        setStatus("Podcast downloads purged", "success");
+      } catch (error) { showError(error); }
     };
   });
   document.querySelectorAll("[data-unsubscribe]").forEach((button) => {
@@ -90,6 +121,7 @@ async function loadPodcasts() {
       const podcastID = Number(button.dataset.unsubscribe);
       if (!(await confirmAction("Unsubscribe and remove all downloaded episodes for this podcast?"))) return;
       try {
+        setStatus("Unsubscribing…");
         await App.Unsubscribe(podcastID);
         if (state.podcast?.id === podcastID) {
           state.podcast = null;
@@ -100,17 +132,20 @@ async function loadPodcasts() {
           $("#episodes").innerHTML = `<p class="muted">Select a podcast to browse episodes.</p>`;
         }
         await loadPodcasts();
+        setStatus("Podcast unsubscribed", "success");
       } catch (error) {
         showError(error);
       }
     };
   });
   if (!state.podcast && podcasts.length) await selectPodcast(podcasts[0].id);
+  setStatus("Subscriptions loaded", "success");
   return podcasts;
 }
 
 async function selectPodcast(id) {
   resetEpisodeFilters();
+  setStatus("Loading episodes…");
   const podcasts = (await App.ListPodcasts()) || [];
   state.podcast = podcasts.find((podcast) => podcast.id === id);
   if (!state.podcast) {
@@ -122,6 +157,7 @@ async function selectPodcast(id) {
     return;
   }
   state.episodes = (await App.ListEpisodes(id)) || [];
+  setStatus(`${state.episodes.length} episode${state.episodes.length === 1 ? "" : "s"} loaded`, "success");
   $("#episode-toolbar").hidden = false;
   $("#active-podcast").innerHTML = `<div class="active-podcast-header">${state.podcast.artworkUrl ? `<img src="${escapeHTML(state.podcast.artworkUrl)}" alt="" class="artwork">` : `<div class="artwork artwork-placeholder">P</div>`}<div><p class="eyebrow">Now browsing</p><h2>${escapeHTML(state.podcast.title)}</h2><p class="muted">${escapeHTML(state.podcast.description)}</p></div></div>`;
   renderEpisodes();
@@ -149,6 +185,7 @@ async function play(id, position = 0) {
   const episode = state.episodes.find((item) => item.id === id);
   if (!episode) return;
   try {
+    setStatus("Buffering episode…");
     const source = await App.GetAudioSource(id);
     state.episode = episode;
     $("#audio").src = source;
@@ -166,6 +203,7 @@ async function play(id, position = 0) {
     await $("#audio").play().catch((error) => {
       console.warn("Audio autoplay was not permitted; playback is ready to start.", error);
     });
+    setStatus(`Playing: ${episode.title}`, "success");
   } catch (error) {
     state.episode = null;
     $("#audio").removeAttribute("src");
@@ -178,23 +216,37 @@ async function play(id, position = 0) {
 $("#subscribe").onsubmit = async (event) => {
   event.preventDefault();
   try {
+    setStatus("Subscribing and retrieving episodes…");
     await App.Subscribe($("#feed-url").value);
     $("#feed-url").value = "";
     await loadPodcasts();
+    setStatus("Podcast subscribed", "success");
   } catch (error) {
     showError(error);
   }
 };
 
 $("#refresh-all").onclick = async () => {
-  await App.RefreshAllFeeds();
-  await loadPodcasts();
-  if (state.podcast) await selectPodcast(state.podcast.id);
+  try {
+    setStatus("Refreshing subscriptions…");
+    await App.RefreshAllFeeds();
+    await loadPodcasts();
+    if (state.podcast) await selectPodcast(state.podcast.id);
+    setStatus("Subscriptions refreshed", "success");
+  } catch (error) { showError(error); }
 };
-$("#purge-all").onclick = async () => { if (await confirmAction("Delete all downloaded media?")) await App.PurgeCache("all", 0); };
+$("#purge-all").onclick = async () => {
+  if (!(await confirmAction("Delete all downloaded media?"))) return;
+  try {
+    setStatus("Purging all downloads…");
+    await App.PurgeCache("all", 0);
+    setStatus("All downloads purged", "success");
+  } catch (error) { showError(error); }
+};
 $("#itunes-search").onsubmit = async (event) => {
   event.preventDefault();
   try {
+    setStatus("Searching iTunes…");
     const results = await App.SearchITunes($("#search-query").value);
     $("#search-view").hidden = false;
     $("#podcasts").hidden = true;
@@ -202,13 +254,22 @@ $("#itunes-search").onsubmit = async (event) => {
       `<div class="search-result"><strong>${escapeHTML(result.title)}</strong><button data-search-feed="${escapeHTML(result.feedUrl)}">Subscribe</button></div>`
     ).join("") : `<p class="muted">No podcasts found.</p>`;
     document.querySelectorAll("[data-search-feed]").forEach((button) => {
-      button.onclick = async () => { await App.Subscribe(button.dataset.searchFeed); $("#search-results").replaceChildren(); await loadPodcasts(); };
+      button.onclick = async () => {
+        try {
+          setStatus("Subscribing and retrieving episodes…");
+          await App.Subscribe(button.dataset.searchFeed);
+          $("#search-results").replaceChildren();
+          await loadPodcasts();
+          setStatus("Podcast subscribed", "success");
+        } catch (error) { showError(error); }
+      };
     });
+    setStatus(`${results.length} search result${results.length === 1 ? "" : "s"} found`, "success");
   } catch (error) { showError(error); }
 };
 $("#close-search").onclick = () => { $("#search-view").hidden = true; $("#podcasts").hidden = false; $("#search-results").replaceChildren(); $("#search-query").value = ""; };
-$("#import-opml").onclick = async () => { try { await App.ImportOPMLDialog(); await loadPodcasts(); } catch (error) { showError(error); } };
-$("#export-opml").onclick = async () => { try { await App.ExportOPMLDialog(); await App.ShowInfo("OPML subscriptions exported."); } catch (error) { showError(error); } };
+$("#import-opml").onclick = async () => { try { setStatus("Importing subscriptions…"); await App.ImportOPMLDialog(); await loadPodcasts(); setStatus("Subscriptions imported", "success"); } catch (error) { showError(error); } };
+$("#export-opml").onclick = async () => { try { setStatus("Exporting subscriptions…"); await App.ExportOPMLDialog(); setStatus("Subscriptions exported", "success"); } catch (error) { showError(error); } };
 
 $("#audio").addEventListener("timeupdate", () => {
   const episode = state.episode;

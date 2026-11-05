@@ -23,3 +23,4 @@
 - Converted HTML and CDATA feed descriptions to plain text without adding dependencies.
 - Added startup and episode-switch playback restoration from SQLite playback state, with safe fallback and cache download recovery.
 - Added resettable episode search, unplayed filtering, and configurable name/publication-date sorting.
+- Replaced informational/error messageboxes with status-bar feedback and added progress messages for retrieval and playback buffering.
