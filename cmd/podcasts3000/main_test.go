@@ -33,6 +33,9 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if !strings.Contains(string(index), `id="active-podcast"`) || !strings.Contains(string(index), `class="player"`) {
 		t.Fatal("frontend is missing artwork header or fixed player regions")
 	}
+	if !strings.Contains(string(index), `id="episode-toolbar"`) || !strings.Contains(string(index), `id="unplayed-only"`) || !strings.Contains(string(index), `id="episode-sort"`) {
+		t.Fatal("frontend is missing episode filtering and sorting toolbar controls")
+	}
 	app, err = frontend.ReadFile("frontend/app.js")
 	if err != nil {
 		t.Fatal(err)
@@ -56,6 +59,9 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	}
 	if !strings.Contains(string(app), "App.GetAudioSource") || !strings.Contains(string(app), "loadedmetadata") {
 		t.Fatal("frontend does not load episode audio and restore its position")
+	}
+	if !strings.Contains(string(app), "titleMatch") || !strings.Contains(string(app), "episode.isCompleted") || !strings.Contains(string(app), "pub-desc") {
+		t.Fatal("frontend does not implement episode search, unplayed filtering, and publication sorting")
 	}
 	if !strings.Contains(string(app), `if (!(await confirmAction("Unsubscribe and remove all downloaded episodes for this podcast?"))) return;`) {
 		t.Fatal("unsubscribe action does not gate deletion on native confirmation")

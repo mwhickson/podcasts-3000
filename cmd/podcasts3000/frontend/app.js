@@ -1,6 +1,6 @@
 import * as App from "./wailsjs/go/podcasts/App.js";
 
-const state = { podcast: null, episodes: [], episode: null };
+const state = { podcast: null, episodes: [], episode: null, filters: { search: "", unplayedOnly: false, sort: "pub-desc" } };
 const $ = (selector) => document.querySelector(selector);
 const escapeHTML = (value) => {
   const element = document.createElement("div");
@@ -14,6 +14,61 @@ const confirmAction = (message) => App.Confirm(message).catch((error) => {
   showError(error);
   return false;
 });
+const resetEpisodeFilters = () => {
+  state.filters = { search: "", unplayedOnly: false, sort: "pub-desc" };
+  $("#episode-search").value = "";
+  $("#unplayed-only").checked = false;
+  $("#episode-sort").value = "pub-desc";
+};
+const filteredEpisodes = () => {
+  const query = state.filters.search.trim().toLocaleLowerCase();
+  return state.episodes
+    .map((episode) => {
+      const titleMatch = query !== "" && episode.title.toLocaleLowerCase().includes(query);
+      const descriptionMatch = query !== "" && episode.description.toLocaleLowerCase().includes(query);
+      return { episode, matchRank: query === "" ? 0 : titleMatch ? 0 : descriptionMatch ? 1 : -1 };
+    })
+    .filter(({ episode, matchRank }) => matchRank >= 0 && (!state.filters.unplayedOnly || !episode.isCompleted))
+    .sort((left, right) => {
+      if (left.matchRank !== right.matchRank) return left.matchRank - right.matchRank;
+      if (state.filters.sort.startsWith("name")) {
+        const direction = state.filters.sort === "name-asc" ? 1 : -1;
+        return left.episode.title.localeCompare(right.episode.title) * direction;
+      }
+      const leftDate = left.episode.pubDate ? Date.parse(left.episode.pubDate) || 0 : 0;
+      const rightDate = right.episode.pubDate ? Date.parse(right.episode.pubDate) || 0 : 0;
+      const direction = state.filters.sort === "pub-asc" ? 1 : -1;
+      return (leftDate - rightDate) * direction;
+    })
+    .map(({ episode }) => episode);
+};
+const renderEpisodes = () => {
+  const episodes = filteredEpisodes();
+  $("#episodes").innerHTML = episodes.length ? episodes.map((episode) =>
+    `<article class="episode"><div class="episode-main"><div class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)}</h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button><button class="pill-button" data-purge-episode="${episode.id}">Purge</button></div></div><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></article>`
+  ).join("") : `<p class="muted">${state.episodes.length ? "No episodes match the current filters." : "No episodes found in this feed."}</p>`;
+};
+const bindEpisodeActions = (podcastID) => {
+  document.querySelectorAll("[data-play]").forEach((button) => {
+    button.onclick = () => {
+      const episode = state.episodes.find((item) => item.id === Number(button.dataset.play));
+      if (episode) return play(episode.id, Math.max(0, episode.positionSeconds || 0));
+    };
+  });
+  document.querySelectorAll("[data-favorite]").forEach((button) => {
+    button.onclick = async () => { await App.ToggleFavorite(Number(button.dataset.favorite)); await selectPodcast(podcastID); };
+  });
+  document.querySelectorAll("[data-save-note]").forEach((button) => {
+    button.onclick = async () => {
+      const episodeID = Number(button.dataset.saveNote);
+      await App.SaveNote(episodeID, document.querySelector(`[data-note="${episodeID}"]`).value);
+      await selectPodcast(podcastID);
+    };
+  });
+  document.querySelectorAll("[data-purge-episode]").forEach((button) => {
+    button.onclick = async () => { if (await confirmAction("Delete this downloaded episode?")) { await App.PurgeCache("episode", Number(button.dataset.purgeEpisode)); await selectPodcast(podcastID); } };
+  });
+};
 
 async function loadPodcasts() {
   const podcasts = (await App.ListPodcasts()) || [];
@@ -39,6 +94,8 @@ async function loadPodcasts() {
         if (state.podcast?.id === podcastID) {
           state.podcast = null;
           state.episodes = [];
+          state.episode = null;
+          $("#episode-toolbar").hidden = true;
           $("#active-podcast").replaceChildren();
           $("#episodes").innerHTML = `<p class="muted">Select a podcast to browse episodes.</p>`;
         }
@@ -53,40 +110,40 @@ async function loadPodcasts() {
 }
 
 async function selectPodcast(id) {
+  resetEpisodeFilters();
   const podcasts = (await App.ListPodcasts()) || [];
   state.podcast = podcasts.find((podcast) => podcast.id === id);
   if (!state.podcast) {
     state.episodes = [];
+    state.episode = null;
+    $("#episode-toolbar").hidden = true;
     $("#active-podcast").replaceChildren();
     $("#episodes").innerHTML = `<p class="muted">Select a podcast to browse episodes.</p>`;
     return;
   }
   state.episodes = (await App.ListEpisodes(id)) || [];
+  $("#episode-toolbar").hidden = false;
   $("#active-podcast").innerHTML = `<div class="active-podcast-header">${state.podcast.artworkUrl ? `<img src="${escapeHTML(state.podcast.artworkUrl)}" alt="" class="artwork">` : `<div class="artwork artwork-placeholder">P</div>`}<div><p class="eyebrow">Now browsing</p><h2>${escapeHTML(state.podcast.title)}</h2><p class="muted">${escapeHTML(state.podcast.description)}</p></div></div>`;
-  $("#episodes").innerHTML = state.episodes.length ? state.episodes.map((episode) =>
-    `<article class="episode"><div class="episode-main"><div class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)}</h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button><button class="pill-button" data-purge-episode="${episode.id}">Purge</button></div></div><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></article>`
-  ).join("") : `<p class="muted">No episodes found in this feed.</p>`;
-  document.querySelectorAll("[data-play]").forEach((button) => {
-    button.onclick = () => {
-      const episode = state.episodes.find((item) => item.id === Number(button.dataset.play));
-      if (episode) return play(episode.id, Math.max(0, episode.positionSeconds || 0));
-    };
-  });
-  document.querySelectorAll("[data-favorite]").forEach((button) => {
-    button.onclick = async () => { await App.ToggleFavorite(Number(button.dataset.favorite)); await selectPodcast(id); };
-  });
-  document.querySelectorAll("[data-save-note]").forEach((button) => {
-    button.onclick = async () => {
-      const episodeID = Number(button.dataset.saveNote);
-      await App.SaveNote(episodeID, document.querySelector(`[data-note="${episodeID}"]`).value);
-      await selectPodcast(id);
-    };
-  });
-  document.querySelectorAll("[data-purge-episode]").forEach((button) => {
-    button.onclick = async () => { if (await confirmAction("Delete this downloaded episode?")) { await App.PurgeCache("episode", Number(button.dataset.purgeEpisode)); await selectPodcast(id); } };
-  });
+  renderEpisodes();
+  bindEpisodeActions(id);
   await loadPodcasts();
 }
+
+$("#episode-search").addEventListener("input", (event) => {
+  state.filters.search = event.target.value;
+  renderEpisodes();
+  bindEpisodeActions(state.podcast?.id);
+});
+$("#unplayed-only").addEventListener("change", (event) => {
+  state.filters.unplayedOnly = event.target.checked;
+  renderEpisodes();
+  bindEpisodeActions(state.podcast?.id);
+});
+$("#episode-sort").addEventListener("change", (event) => {
+  state.filters.sort = event.target.value;
+  renderEpisodes();
+  bindEpisodeActions(state.podcast?.id);
+});
 
 async function play(id, position = 0) {
   const episode = state.episodes.find((item) => item.id === id);
@@ -179,6 +236,7 @@ async function restoreLastPlayed() {
   }
 }
 
+resetEpisodeFilters();
 loadPodcasts().then(restoreLastPlayed).catch((error) => {
   $("#episodes").innerHTML = `<p class="muted">${escapeHTML(messageText(error))}</p>`;
   showError(error);

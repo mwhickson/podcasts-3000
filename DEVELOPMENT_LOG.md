@@ -22,3 +22,4 @@
 - Hardened feed defaults and tolerant SQLite date scanning for incomplete or legacy feed data.
 - Converted HTML and CDATA feed descriptions to plain text without adding dependencies.
 - Added startup and episode-switch playback restoration from SQLite playback state, with safe fallback and cache download recovery.
+- Added resettable episode search, unplayed filtering, and configurable name/publication-date sorting.

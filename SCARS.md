@@ -100,3 +100,7 @@ All AI agents working on this codebase MUST read this log prior to executing any
 - Issue: The application loaded subscriptions but did not restore the last played episode or its saved position.
 - Root Cause: The Wails frontend did not call the existing `GetLastPlayed` binding, and playback tracked the current episode by title instead of ID.
 - Prevention Rule: Restore playback by episode ID from `playback_state`, apply the saved position after audio metadata loads, and fall back to the default player state on errors. `GetAudioSource` must remain responsible for initiating a recoverable download when cached media is unavailable.
+
+## [2026-11-04] Episode Filter State
+- Issue: Episode search, played-state filtering, and sorting need to remain scoped to the currently selected podcast.
+- Prevention Rule: Keep these controls in a sticky episode toolbar, reset them on startup and podcast selection, prefer title matches over description matches, and default to newest publication date first.
