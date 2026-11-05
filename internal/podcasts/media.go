@@ -138,11 +138,20 @@ func (s *Store) SaveProgress(ctx context.Context, episodeID int64, seconds int, 
 	if seconds < 0 {
 		return fmt.Errorf("position cannot be negative")
 	}
+
 	done := 0
 	if completed {
 		done = 1
 	}
 	_, err := s.db.ExecContext(ctx, `INSERT INTO playback_state(episode_id,position_seconds,is_completed,last_played_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(episode_id) DO UPDATE SET position_seconds=excluded.position_seconds,is_completed=excluded.is_completed,last_played_at=CURRENT_TIMESTAMP`, episodeID, seconds, done)
+	return err
+}
+
+func (s *Store) UpdateDuration(ctx context.Context, episodeID int64, seconds int) error {
+	if seconds <= 0 {
+		return nil
+	}
+	_, err := s.db.ExecContext(ctx, `UPDATE episodes SET duration_seconds=? WHERE id=?`, seconds, episodeID)
 	return err
 }
 

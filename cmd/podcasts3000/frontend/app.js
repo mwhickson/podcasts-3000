@@ -210,6 +210,11 @@ async function play(id, position = 0) {
     $("#now-playing").textContent = episode.title;
     const setPosition = () => {
       const audio = $("#audio");
+      if (Number.isFinite(audio.duration) && audio.duration > 0) {
+        const duration = Math.floor(audio.duration);
+        episode.durationSeconds = duration;
+        App.UpdateDuration(episode.id, duration).catch(showError);
+      }
       if (position > 0 && Number.isFinite(audio.duration)) {
         audio.currentTime = Math.min(position, audio.duration);
       } else if (position > 0) {

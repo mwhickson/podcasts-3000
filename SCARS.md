@@ -113,3 +113,8 @@ All AI agents working on this codebase MUST read this log prior to executing any
 ## [2026-11-04] Episode Played State Controls
 - Issue: Users could filter unplayed episodes but could not directly change an episode's played state.
 - Prevention Rule: Episode cards must show safe publication/duration fallbacks and use `SaveProgress` to mark episodes played or unplayed so the unplayed filter updates immediately.
+
+## [2026-11-04] Episode Duration Sources
+- Issue: Episode durations were often displayed as unknown even when podcast feeds supplied them.
+- Root Cause: Many feeds use the namespaced `itunes:duration` element, while playback metadata was not persisted back to the episode record.
+- Prevention Rule: Parse standard and `itunes:duration` feed values, retain unknown as zero, and update positive durations from confirmed audio metadata during playback.

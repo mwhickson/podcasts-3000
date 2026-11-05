@@ -10,9 +10,9 @@ import (
 )
 
 func TestParseFeed(t *testing.T) {
-	data := []byte(`<rss><channel><title>Example</title><description><![CDATA[<p>Desc &amp; details</p><p>More</p>]]></description><item><guid>one</guid><title>Episode one</title><description><![CDATA[<p>Shownotes</p><ul><li>One</li><li>Two</li></ul>]]></description><pubDate>Mon, 02 Jan 2023 15:04:05 +0000</pubDate><enclosure url="https://example.test/one.mp3"/></item></channel></rss>`)
+	data := []byte(`<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"><channel><title>Example</title><description><![CDATA[<p>Desc &amp; details</p><p>More</p>]]></description><item><guid>one</guid><title>Episode one</title><description><![CDATA[<p>Shownotes</p><ul><li>One</li><li>Two</li></ul>]]></description><pubDate>Mon, 02 Jan 2023 15:04:05 +0000</pubDate><itunes:duration>1:02:03</itunes:duration><enclosure url="https://example.test/one.mp3"/></item></channel></rss>`)
 	podcast, episodes, err := parseFeed(data)
-	if err != nil || podcast.Title != "Example" || podcast.Description != "Desc & details\nMore" || len(episodes) != 1 || episodes[0].AudioURL != "https://example.test/one.mp3" || episodes[0].Description != "Shownotes\nOne\nTwo" {
+	if err != nil || podcast.Title != "Example" || podcast.Description != "Desc & details\nMore" || len(episodes) != 1 || episodes[0].AudioURL != "https://example.test/one.mp3" || episodes[0].Description != "Shownotes\nOne\nTwo" || episodes[0].DurationSeconds != 3723 {
 		t.Fatalf("unexpected parse result: %#v %#v %v", podcast, episodes, err)
 	}
 }

@@ -127,6 +127,9 @@ func (a *App) PurgeCache(scope string, id int64) error {
 func (a *App) SaveProgress(id int64, seconds int, completed bool) error {
 	return a.Store.SaveProgress(context.Background(), id, seconds, completed)
 }
+func (a *App) UpdateDuration(id int64, seconds int) error {
+	return a.Store.UpdateDuration(context.Background(), id, seconds)
+}
 func (a *App) GetLastPlayed() (Episode, error) { return a.Store.GetLastPlayed(context.Background()) }
 func (a *App) ToggleFavorite(id int64) (bool, error) {
 	return a.Store.ToggleFavorite(context.Background(), id)

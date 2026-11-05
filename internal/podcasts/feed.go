@@ -48,7 +48,8 @@ type feedItem struct {
 		Href string `xml:"href,attr"`
 		Type string `xml:"type,attr"`
 	} `xml:"link"`
-	Duration string `xml:"duration"`
+	Duration       string `xml:"duration"`
+	ITunesDuration string `xml:"itunes:duration"`
 }
 type feedEntry struct {
 	ID        string `xml:"id"`
@@ -197,7 +198,11 @@ func parseFeed(data []byte) (Podcast, []Episode, error) {
 		if date == "" {
 			date = item.Published
 		}
-		episodes = append(episodes, Episode{GUID: guid, Title: title, Description: desc, AudioURL: audio, PubDate: parseDate(date), DurationSeconds: parseDuration(item.Duration)})
+		duration := item.Duration
+		if strings.TrimSpace(duration) == "" {
+			duration = item.ITunesDuration
+		}
+		episodes = append(episodes, Episode{GUID: guid, Title: title, Description: desc, AudioURL: audio, PubDate: parseDate(date), DurationSeconds: parseDuration(duration)})
 	}
 	if len(episodes) == 0 {
 		for _, entry := range doc.Entry {

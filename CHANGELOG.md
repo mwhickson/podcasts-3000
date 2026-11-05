@@ -20,3 +20,4 @@
 - Added sticky episode search, unplayed filtering, and name/publication-date sorting controls.
 - Added a persistent status bar for progress, success, and failure feedback.
 - Added episode publication dates, durations, and played-state controls.
+- Populate episode durations from `itunes:duration` and confirm them from playback metadata.

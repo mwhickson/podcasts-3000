@@ -72,6 +72,9 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if !strings.Contains(string(app), "data-played") || !strings.Contains(string(app), "formatDate") || !strings.Contains(string(app), "formatDuration") {
 		t.Fatal("frontend does not display episode metadata or provide played-state controls")
 	}
+	if !strings.Contains(string(app), "App.UpdateDuration") || !strings.Contains(string(app), "audio.duration") {
+		t.Fatal("frontend does not persist confirmed playback duration")
+	}
 	if !strings.Contains(string(app), `if (!(await confirmAction("Unsubscribe and remove all downloaded episodes for this podcast?"))) return;`) {
 		t.Fatal("unsubscribe action does not gate deletion on native confirmation")
 	}
