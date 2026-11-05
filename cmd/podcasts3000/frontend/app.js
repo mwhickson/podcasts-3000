@@ -1,6 +1,6 @@
 import * as App from "./wailsjs/go/podcasts/App.js";
 
-const state = { podcast: null, episodes: [] };
+const state = { podcast: null, episodes: [], episode: null };
 const $ = (selector) => document.querySelector(selector);
 const escapeHTML = (value) => {
   const element = document.createElement("div");
@@ -49,6 +49,7 @@ async function loadPodcasts() {
     };
   });
   if (!state.podcast && podcasts.length) await selectPodcast(podcasts[0].id);
+  return podcasts;
 }
 
 async function selectPodcast(id) {
@@ -60,13 +61,16 @@ async function selectPodcast(id) {
     $("#episodes").innerHTML = `<p class="muted">Select a podcast to browse episodes.</p>`;
     return;
   }
-  state.episodes = await App.ListEpisodes(id);
+  state.episodes = (await App.ListEpisodes(id)) || [];
   $("#active-podcast").innerHTML = `<div class="active-podcast-header">${state.podcast.artworkUrl ? `<img src="${escapeHTML(state.podcast.artworkUrl)}" alt="" class="artwork">` : `<div class="artwork artwork-placeholder">P</div>`}<div><p class="eyebrow">Now browsing</p><h2>${escapeHTML(state.podcast.title)}</h2><p class="muted">${escapeHTML(state.podcast.description)}</p></div></div>`;
   $("#episodes").innerHTML = state.episodes.length ? state.episodes.map((episode) =>
     `<article class="episode"><div class="episode-main"><div class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)}</h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button><button class="pill-button" data-purge-episode="${episode.id}">Purge</button></div></div><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></article>`
   ).join("") : `<p class="muted">No episodes found in this feed.</p>`;
   document.querySelectorAll("[data-play]").forEach((button) => {
-    button.onclick = () => play(Number(button.dataset.play));
+    button.onclick = () => {
+      const episode = state.episodes.find((item) => item.id === Number(button.dataset.play));
+      if (episode) return play(episode.id, Math.max(0, episode.positionSeconds || 0));
+    };
   });
   document.querySelectorAll("[data-favorite]").forEach((button) => {
     button.onclick = async () => { await App.ToggleFavorite(Number(button.dataset.favorite)); await selectPodcast(id); };
@@ -84,12 +88,34 @@ async function selectPodcast(id) {
   await loadPodcasts();
 }
 
-async function play(id) {
+async function play(id, position = 0) {
   const episode = state.episodes.find((item) => item.id === id);
-  const source = await App.GetAudioSource(id);
-  $("#audio").src = source;
-  $("#now-playing").textContent = episode.title;
-  $("#audio").play();
+  if (!episode) return;
+  try {
+    const source = await App.GetAudioSource(id);
+    state.episode = episode;
+    $("#audio").src = source;
+    $("#now-playing").textContent = episode.title;
+    const setPosition = () => {
+      const audio = $("#audio");
+      if (position > 0 && Number.isFinite(audio.duration)) {
+        audio.currentTime = Math.min(position, audio.duration);
+      } else if (position > 0) {
+        audio.currentTime = position;
+      }
+    };
+    $("#audio").addEventListener("loadedmetadata", setPosition, { once: true });
+    setPosition();
+    await $("#audio").play().catch((error) => {
+      console.warn("Audio autoplay was not permitted; playback is ready to start.", error);
+    });
+  } catch (error) {
+    state.episode = null;
+    $("#audio").removeAttribute("src");
+    $("#audio").load();
+    $("#now-playing").textContent = "Nothing playing";
+    throw error;
+  }
 }
 
 $("#subscribe").onsubmit = async (event) => {
@@ -128,14 +154,32 @@ $("#import-opml").onclick = async () => { try { await App.ImportOPMLDialog(); aw
 $("#export-opml").onclick = async () => { try { await App.ExportOPMLDialog(); await App.ShowInfo("OPML subscriptions exported."); } catch (error) { showError(error); } };
 
 $("#audio").addEventListener("timeupdate", () => {
-  const episode = state.episodes.find((item) => item.title === $("#now-playing").textContent);
+  const episode = state.episode;
   if (episode && Math.floor($("#audio").currentTime) % 5 === 0) {
     App.SaveProgress(episode.id, Math.floor($("#audio").currentTime), false);
   }
 });
 $("#audio").addEventListener("ended", () => {
-  const episode = state.episodes.find((item) => item.title === $("#now-playing").textContent);
+  const episode = state.episode;
   if (episode) App.SaveProgress(episode.id, Math.floor($("#audio").duration), true);
 });
 
-loadPodcasts().catch((error) => { $("#episodes").innerHTML = `<p class="muted">${escapeHTML(messageText(error))}</p>`; showError(error); });
+async function restoreLastPlayed() {
+  try {
+    const lastPlayed = await App.GetLastPlayed();
+    if (!lastPlayed?.id) return;
+    await selectPodcast(lastPlayed.podcastId);
+    await play(lastPlayed.id, Math.max(0, lastPlayed.positionSeconds || 0));
+  } catch (error) {
+    console.warn("Unable to restore last played episode; using default player state.", error);
+    state.episode = null;
+    $("#audio").removeAttribute("src");
+    $("#audio").load();
+    $("#now-playing").textContent = "Nothing playing";
+  }
+}
+
+loadPodcasts().then(restoreLastPlayed).catch((error) => {
+  $("#episodes").innerHTML = `<p class="muted">${escapeHTML(messageText(error))}</p>`;
+  showError(error);
+});

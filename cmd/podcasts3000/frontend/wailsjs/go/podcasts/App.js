@@ -35,6 +35,9 @@ export async function GetAudioSource(episodeID) {
 export async function SaveProgress(episodeID, seconds, completed) {
   return (await waitForBackend()).SaveProgress(episodeID, seconds, completed);
 }
+export async function GetLastPlayed() {
+  return (await waitForBackend()).GetLastPlayed();
+}
 export async function SearchITunes(query) {
   return (await waitForBackend()).SearchITunes(query);
 }

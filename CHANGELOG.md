@@ -16,3 +16,4 @@
 - Fixed affirmative responses from native confirmation dialogs on Linux.
 - Hardened feed loading for missing fields and SQLite date values.
 - Converted HTML podcast and episode descriptions to readable plain text.
+- Restored the last played episode and saved playback position when starting the application or switching episodes.

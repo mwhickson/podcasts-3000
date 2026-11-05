@@ -51,6 +51,12 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 			t.Fatalf("frontend does not use native App.%s dialog binding", method)
 		}
 	}
+	if !strings.Contains(string(app), "App.GetLastPlayed") || !strings.Contains(string(app), "lastPlayed.positionSeconds") || !strings.Contains(string(app), "episode.positionSeconds") {
+		t.Fatal("frontend does not restore saved episode playback positions")
+	}
+	if !strings.Contains(string(app), "App.GetAudioSource") || !strings.Contains(string(app), "loadedmetadata") {
+		t.Fatal("frontend does not load episode audio and restore its position")
+	}
 	if !strings.Contains(string(app), `if (!(await confirmAction("Unsubscribe and remove all downloaded episodes for this podcast?"))) return;`) {
 		t.Fatal("unsubscribe action does not gate deletion on native confirmation")
 	}

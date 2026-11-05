@@ -21,3 +21,4 @@
 - Fixed native confirmation response handling so unsubscribe and purge actions proceed on Linux Wails dialogs.
 - Hardened feed defaults and tolerant SQLite date scanning for incomplete or legacy feed data.
 - Converted HTML and CDATA feed descriptions to plain text without adding dependencies.
+- Added startup and episode-switch playback restoration from SQLite playback state, with safe fallback and cache download recovery.
