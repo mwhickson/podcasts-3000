@@ -50,10 +50,15 @@ const filteredEpisodes = () => {
     })
     .map(({ episode }) => episode);
 };
+const formatDate = (value) => value ? new Date(value).toLocaleDateString() : "Publication date unknown";
+const formatDuration = (seconds) => {
+  const total = Math.max(0, Number(seconds) || 0);
+  return total ? `${Math.floor(total / 60)}m ${String(total % 60).padStart(2, "0")}s` : "Duration unknown";
+};
 const renderEpisodes = () => {
   const episodes = filteredEpisodes();
   $("#episodes").innerHTML = episodes.length ? episodes.map((episode) =>
-    `<article class="episode"><div class="episode-main"><div class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)}</h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button><button class="pill-button" data-purge-episode="${episode.id}">Purge</button></div></div><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></article>`
+    `<article class="episode"><div class="episode-main"><div class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)}</h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-played="${episode.id}">${episode.isCompleted ? "Mark unplayed" : "Mark played"}</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button><button class="pill-button" data-purge-episode="${episode.id}">Purge</button></div></div><p class="episode-meta">${formatDate(episode.pubDate)} · ${formatDuration(episode.durationSeconds)}</p><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></article>`
   ).join("") : `<p class="muted">${state.episodes.length ? "No episodes match the current filters." : "No episodes found in this feed."}</p>`;
 };
 const bindEpisodeActions = (podcastID) => {
@@ -69,6 +74,19 @@ const bindEpisodeActions = (podcastID) => {
         await App.ToggleFavorite(Number(button.dataset.favorite));
         setStatus("Favorite updated", "success");
         await selectPodcast(podcastID);
+      } catch (error) { showError(error); }
+    };
+  });
+  document.querySelectorAll("[data-played]").forEach((button) => {
+    button.onclick = async () => {
+      const episode = state.episodes.find((item) => item.id === Number(button.dataset.played));
+      if (!episode) return;
+      try {
+        await App.SaveProgress(episode.id, episode.isCompleted ? 0 : Math.max(0, episode.durationSeconds || 0), !episode.isCompleted);
+        episode.isCompleted = !episode.isCompleted;
+        renderEpisodes();
+        bindEpisodeActions(podcastID);
+        setStatus(episode.isCompleted ? "Episode marked played" : "Episode marked unplayed", "success");
       } catch (error) { showError(error); }
     };
   });

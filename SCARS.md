@@ -109,3 +109,7 @@ All AI agents working on this codebase MUST read this log prior to executing any
 - Issue: Network and other variable-length actions appeared inactive while the application was working.
 - Root Cause: Informational and error feedback relied on modal messageboxes or was absent during asynchronous operations.
 - Prevention Rule: Use the persistent status bar for progress, success, and failure messages. Reserve native dialogs for destructive confirmations.
+
+## [2026-11-04] Episode Played State Controls
+- Issue: Users could filter unplayed episodes but could not directly change an episode's played state.
+- Prevention Rule: Episode cards must show safe publication/duration fallbacks and use `SaveProgress` to mark episodes played or unplayed so the unplayed filter updates immediately.

@@ -60,6 +60,7 @@ aside {
   background: #14181c;
 }
 .sidebar-controls { flex: 0 0 auto; }
+.sidebar-controls { margin-bottom: 1rem; }
 aside form { display: flex; gap: .45rem; margin: 0 0 .75rem; }
 aside form input { min-width: 0; flex: 1; }
 .content { width: 100%; max-width: 1050px; min-height: 0; overflow: auto; padding: 1.5rem 2rem 7rem; }
@@ -151,6 +152,7 @@ h2 { margin: 0; font-size: 1.45rem; }
   background: #171b20;
 }
 .episode h3 { margin: 0; font-size: 1rem; font-weight: 650; }
+.episode-meta { margin: .35rem 0 .55rem !important; color: #8d99a6 !important; font-size: .8rem; }
 .episode p { margin: .55rem 0 .75rem; color: #aeb8c3; }
 .episode-actions { flex-shrink: 0; }
 .pill-button { padding: .3rem .6rem; border-radius: 999px; font-size: .8rem; }
