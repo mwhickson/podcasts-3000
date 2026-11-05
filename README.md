@@ -2,6 +2,8 @@
 
 Minimal, offline-first podcast player built with Go, pure-Go SQLite, and vanilla HTML5.
 
+![screenshot](screenshot.png)
+
 ## Run the desktop application
 
 ```sh
