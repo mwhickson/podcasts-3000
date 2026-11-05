@@ -1,6 +1,7 @@
 import * as App from "./wailsjs/go/podcasts/App.js";
 
 const state = { podcast: null, episodes: [], episode: null, filters: { search: "", unplayedOnly: false, sort: "pub-desc" } };
+const sidebarWidth = { min: 220, max: 560, default: 310 };
 const $ = (selector) => document.querySelector(selector);
 const escapeHTML = (value) => {
   const element = document.createElement("div");
@@ -60,6 +61,48 @@ const renderEpisodes = () => {
   $("#episodes").innerHTML = episodes.length ? episodes.map((episode) =>
     `<article class="episode"><div class="episode-main"><div class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)}</h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-played="${episode.id}">${episode.isCompleted ? "Mark unplayed" : "Mark played"}</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button><button class="pill-button" data-purge-episode="${episode.id}">Purge</button></div></div><p class="episode-meta">${formatDate(episode.pubDate)} · ${formatDuration(episode.durationSeconds)}</p><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></article>`
   ).join("") : `<p class="muted">${state.episodes.length ? "No episodes match the current filters." : "No episodes found in this feed."}</p>`;
+};
+const setSidebarWidth = (width) => {
+  const clamped = Math.min(sidebarWidth.max, Math.max(sidebarWidth.min, Math.round(width)));
+  document.documentElement.style.setProperty("--sidebar-width", `${clamped}px`);
+  $("#pane-resizer").setAttribute("aria-valuenow", String(clamped));
+  localStorage.setItem("podcasts3000.sidebar-width", String(clamped));
+};
+const resizeLayout = () => {
+  document.documentElement.style.setProperty("--viewport-height", `${window.innerHeight}px`);
+  if (state.podcast) {
+    renderEpisodes();
+    bindEpisodeActions(state.podcast.id);
+  }
+};
+const initializeLayout = () => {
+  const savedWidth = Number(localStorage.getItem("podcasts3000.sidebar-width"));
+  setSidebarWidth(Number.isFinite(savedWidth) && savedWidth > 0 ? savedWidth : sidebarWidth.default);
+  resizeLayout();
+  const resizer = $("#pane-resizer");
+  let dragging = false;
+  const stopDragging = () => {
+    dragging = false;
+    document.body.classList.remove("resizing-panes");
+  };
+  resizer.addEventListener("pointerdown", (event) => {
+    dragging = true;
+    resizer.setPointerCapture(event.pointerId);
+    document.body.classList.add("resizing-panes");
+    event.preventDefault();
+  });
+  resizer.addEventListener("pointermove", (event) => {
+    if (dragging) setSidebarWidth(event.clientX);
+  });
+  resizer.addEventListener("pointerup", stopDragging);
+  resizer.addEventListener("pointercancel", stopDragging);
+  resizer.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      setSidebarWidth(Number(getComputedStyle(document.documentElement).getPropertyValue("--sidebar-width").replace("px", "")) + (event.key === "ArrowLeft" ? -10 : 10));
+      event.preventDefault();
+    }
+  });
+  window.addEventListener("resize", resizeLayout);
 };
 const bindEpisodeActions = (podcastID) => {
   document.querySelectorAll("[data-play]").forEach((button) => {
@@ -325,6 +368,7 @@ async function restoreLastPlayed() {
 }
 
 resetEpisodeFilters();
+initializeLayout();
 loadPodcasts().then(restoreLastPlayed).catch((error) => {
   $("#episodes").innerHTML = `<p class="muted">${escapeHTML(messageText(error))}</p>`;
   showError(error);

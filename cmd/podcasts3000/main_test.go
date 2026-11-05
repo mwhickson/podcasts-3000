@@ -36,6 +36,9 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	if !strings.Contains(string(index), `id="episode-toolbar"`) || !strings.Contains(string(index), `id="unplayed-only"`) || !strings.Contains(string(index), `id="episode-sort"`) {
 		t.Fatal("frontend is missing episode filtering and sorting toolbar controls")
 	}
+	if !strings.Contains(string(index), `id="pane-resizer"`) {
+		t.Fatal("frontend is missing the resizable pane divider")
+	}
 	if !strings.Contains(string(index), `id="import-opml"`) || !strings.Contains(string(index), `id="export-opml"`) {
 		t.Fatal("frontend is missing OPML controls")
 	}
@@ -74,6 +77,9 @@ func TestEmbeddedFrontendUsesBoundPackageNamespace(t *testing.T) {
 	}
 	if !strings.Contains(string(app), "App.UpdateDuration") || !strings.Contains(string(app), "audio.duration") {
 		t.Fatal("frontend does not persist confirmed playback duration")
+	}
+	if !strings.Contains(string(app), "window.addEventListener(\"resize\"") || !strings.Contains(string(app), "setSidebarWidth") {
+		t.Fatal("frontend does not update layout on resize or support pane resizing")
 	}
 	if !strings.Contains(string(app), "play(lastPlayed.id, Math.max(0, lastPlayed.positionSeconds || 0), false)") {
 		t.Fatal("frontend restores startup playback without auto-starting")
