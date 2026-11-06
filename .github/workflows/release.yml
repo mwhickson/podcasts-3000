@@ -29,7 +29,7 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Build release executables
+      - name: Build release executables (Windows GUI subsystem)
         run: make release
 
       - name: Publish GitHub release

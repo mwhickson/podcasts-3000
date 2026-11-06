@@ -36,6 +36,7 @@ The package path starts with `./` (a relative path), not `/.`:
 `go run` uses a temporary executable and does not leave a binary in the repository. Use `make build` when a persistent `podcasts3000` binary is required. `make run-dev` is available for Wails development builds.
 
 Use `make release` to create `release/podcasts3000-linux-amd64` and `release/podcasts3000-windows-amd64.exe`.
+The Windows release is linked with the GUI subsystem, so launching it does not create a console window.
 
 GitHub Actions runs the test, Wails-tagged runtime test, and vet targets on pushes and pull requests. Pushing a `v*` tag builds both release executables and publishes them to a GitHub release.
 
