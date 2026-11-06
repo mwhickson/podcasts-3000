@@ -1,6 +1,6 @@
 import * as App from "./wailsjs/go/podcasts/App.js";
 
-const state = { podcast: null, episodes: [], episode: null, filters: { search: "", unplayedOnly: false, sort: "pub-desc" } };
+const state = { podcast: null, episodes: [], episode: null, filters: { search: "", showAll: false, sort: "pub-desc" } };
 const sidebarWidth = { min: 220, max: 560, default: 310 };
 const $ = (selector) => document.querySelector(selector);
 const escapeHTML = (value) => {
@@ -24,7 +24,7 @@ const confirmAction = (message) => App.Confirm(message).catch((error) => {
   return false;
 });
 const resetEpisodeFilters = () => {
-  state.filters = { search: "", unplayedOnly: false, sort: "pub-desc" };
+  state.filters = { search: "", showAll: false, sort: "pub-desc" };
   $("#episode-search").value = "";
   $("#unplayed-only").checked = false;
   $("#episode-sort").value = "pub-desc";
@@ -37,7 +37,7 @@ const filteredEpisodes = () => {
       const descriptionMatch = query !== "" && episode.description.toLocaleLowerCase().includes(query);
       return { episode, matchRank: query === "" ? 0 : titleMatch ? 0 : descriptionMatch ? 1 : -1 };
     })
-    .filter(({ episode, matchRank }) => matchRank >= 0 && (!state.filters.unplayedOnly || !episode.isCompleted))
+    .filter(({ episode, matchRank }) => matchRank >= 0 && (state.filters.showAll || !episode.isCompleted))
     .sort((left, right) => {
       if (left.matchRank !== right.matchRank) return left.matchRank - right.matchRank;
       if (state.filters.sort.startsWith("name")) {
@@ -59,7 +59,7 @@ const formatDuration = (seconds) => {
 const renderEpisodes = () => {
   const episodes = filteredEpisodes();
   $("#episodes").innerHTML = episodes.length ? episodes.map((episode) =>
-    `<article class="episode"><div class="episode-main"><div class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)}</h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-played="${episode.id}">${episode.isCompleted ? "Mark unplayed" : "Mark played"}</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button><button class="pill-button" data-purge-episode="${episode.id}">Purge</button></div></div><p class="episode-meta">${formatDate(episode.pubDate)} · ${formatDuration(episode.durationSeconds)}</p><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></article>`
+    `<details class="episode ${episode.isCompleted ? "played" : ""}"><summary class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)} <span class="episode-meta">${formatDate(episode.pubDate)}</span></h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-played="${episode.id}">${episode.isCompleted ? "Mark unplayed" : "Mark played"}</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button>${episode.isDownloaded ? `<button class="pill-button" data-purge-episode="${episode.id}">Purge</button>` : ""}</div></summary><div class="episode-body"><p class="episode-meta">${formatDuration(episode.durationSeconds)}</p><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></details>`
   ).join("") : `<p class="muted">${state.episodes.length ? "No episodes match the current filters." : "No episodes found in this feed."}</p>`;
 };
 const setSidebarWidth = (width) => {
@@ -105,14 +105,19 @@ const initializeLayout = () => {
   window.addEventListener("resize", resizeLayout);
 };
 const bindEpisodeActions = (podcastID) => {
+  document.querySelectorAll(".episode-actions button").forEach((button) => {
+    button.onclick = (event) => event.stopPropagation();
+  });
   document.querySelectorAll("[data-play]").forEach((button) => {
-    button.onclick = () => {
+    button.onclick = (event) => {
+      event.stopPropagation();
       const episode = state.episodes.find((item) => item.id === Number(button.dataset.play));
       if (episode) return play(episode.id, Math.max(0, episode.positionSeconds || 0));
     };
   });
   document.querySelectorAll("[data-favorite]").forEach((button) => {
-    button.onclick = async () => {
+    button.onclick = async (event) => {
+      event.stopPropagation();
       try {
         await App.ToggleFavorite(Number(button.dataset.favorite));
         setStatus("Favorite updated", "success");
@@ -121,7 +126,8 @@ const bindEpisodeActions = (podcastID) => {
     };
   });
   document.querySelectorAll("[data-played]").forEach((button) => {
-    button.onclick = async () => {
+    button.onclick = async (event) => {
+      event.stopPropagation();
       const episode = state.episodes.find((item) => item.id === Number(button.dataset.played));
       if (!episode) return;
       try {
@@ -134,7 +140,8 @@ const bindEpisodeActions = (podcastID) => {
     };
   });
   document.querySelectorAll("[data-save-note]").forEach((button) => {
-    button.onclick = async () => {
+    button.onclick = async (event) => {
+      event.stopPropagation();
       const episodeID = Number(button.dataset.saveNote);
       try {
         await App.SaveNote(episodeID, document.querySelector(`[data-note="${episodeID}"]`).value);
@@ -144,7 +151,8 @@ const bindEpisodeActions = (podcastID) => {
     };
   });
   document.querySelectorAll("[data-purge-episode]").forEach((button) => {
-    button.onclick = async () => {
+    button.onclick = async (event) => {
+      event.stopPropagation();
       if (!(await confirmAction("Delete this downloaded episode?"))) return;
       try {
         setStatus("Purging episode download…");
@@ -160,7 +168,7 @@ async function loadPodcasts() {
   setStatus("Loading subscriptions…");
   const podcasts = (await App.ListPodcasts()) || [];
   $("#podcasts").innerHTML = podcasts.map((podcast) =>
-    `<div class="podcast ${state.podcast?.id === podcast.id ? "active" : ""}" data-id="${podcast.id}"><span class="podcast-name">${escapeHTML(podcast.title)}</span><span class="podcast-actions"><button class="compact-button" data-purge-podcast="${podcast.id}" title="Purge this podcast's downloads">Purge</button><button class="compact-button" data-unsubscribe="${podcast.id}" title="Unsubscribe from this podcast">Unsubscribe</button></span></div>`
+    `<div class="podcast ${state.podcast?.id === podcast.id ? "active" : ""} ${podcast.hasRecentUnplayed ? "recent-unplayed" : ""}" data-id="${podcast.id}"><span class="podcast-name">${escapeHTML(podcast.title)}</span><span class="podcast-actions"><button class="compact-button" data-mark-podcast-played="${podcast.id}" title="Mark all episodes played">Mark Played</button>${podcast.hasCachedEpisodes ? `<button class="compact-button" data-purge-podcast="${podcast.id}" title="Purge this podcast's downloads">Purge</button>` : ""}<button class="compact-button" data-unsubscribe="${podcast.id}" title="Unsubscribe from this podcast">Unsubscribe</button></span></div>`
   ).join("");
   document.querySelectorAll(".podcast").forEach((element) => {
     element.onclick = () => selectPodcast(Number(element.dataset.id));
@@ -172,7 +180,20 @@ async function loadPodcasts() {
       try {
         setStatus("Purging podcast downloads…");
         await App.PurgeCache("podcast", Number(button.dataset.purgePodcast));
+        await loadPodcasts();
+        if (state.podcast?.id === Number(button.dataset.purgePodcast)) await selectPodcast(state.podcast.id);
         setStatus("Podcast downloads purged", "success");
+      } catch (error) { showError(error); }
+    };
+  });
+  document.querySelectorAll("[data-mark-podcast-played]").forEach((button) => {
+    button.onclick = async (event) => {
+      event.stopPropagation();
+      try {
+        await App.MarkPodcastPlayed(Number(button.dataset.markPodcastPlayed));
+        await loadPodcasts();
+        if (state.podcast?.id === Number(button.dataset.markPodcastPlayed)) await selectPodcast(state.podcast.id);
+        setStatus("All podcast episodes marked played", "success");
       } catch (error) { showError(error); }
     };
   });
@@ -232,7 +253,7 @@ $("#episode-search").addEventListener("input", (event) => {
   bindEpisodeActions(state.podcast?.id);
 });
 $("#unplayed-only").addEventListener("change", (event) => {
-  state.filters.unplayedOnly = event.target.checked;
+  state.filters.showAll = event.target.checked;
   renderEpisodes();
   bindEpisodeActions(state.podcast?.id);
 });
@@ -360,9 +381,18 @@ $("#audio").addEventListener("timeupdate", () => {
     App.SaveProgress(episode.id, Math.floor($("#audio").currentTime), false);
   }
 });
-$("#audio").addEventListener("ended", () => {
+$("#audio").addEventListener("ended", async () => {
   const episode = state.episode;
-  if (episode) App.SaveProgress(episode.id, Math.floor($("#audio").duration), true);
+  if (!episode) return;
+  try {
+    await App.SaveProgress(episode.id, Math.floor($("#audio").duration), true);
+    episode.isCompleted = true;
+    episode.isDownloaded = false;
+    renderEpisodes();
+    bindEpisodeActions(episode.podcastId);
+    await loadPodcasts();
+    setStatus("Episode completed and download purged", "success");
+  } catch (error) { showError(error); }
 });
 
 async function restoreLastPlayed() {

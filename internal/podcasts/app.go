@@ -130,6 +130,9 @@ func (a *App) PurgeCache(scope string, id int64) error {
 func (a *App) SaveProgress(id int64, seconds int, completed bool) error {
 	return a.Store.SaveProgress(context.Background(), id, seconds, completed)
 }
+func (a *App) MarkPodcastPlayed(id int64) error {
+	return a.Store.MarkPodcastPlayed(context.Background(), id)
+}
 func (a *App) UpdateDuration(id int64, seconds int) error {
 	return a.Store.UpdateDuration(context.Background(), id, seconds)
 }

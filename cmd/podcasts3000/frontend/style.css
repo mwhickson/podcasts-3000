@@ -141,6 +141,7 @@ aside form input { min-width: 0; flex: 1; }
   cursor: pointer;
 }
 .podcast:hover, .podcast.active { background: #252c34; }
+.podcast.recent-unplayed { border-left: 3px solid #70a7ff; background: #1d2938; }
 .podcast-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .podcast-actions { display: flex; flex: 0 0 auto; gap: .3rem; }
 .compact-button { padding: .25rem .45rem; font-size: .75rem; color: #aeb8c3; }
@@ -175,6 +176,11 @@ h2 { margin: 0; font-size: 1.45rem; }
   border-radius: 10px;
   background: #171b20;
 }
+.episode.played { opacity: .58; }
+.episode summary { list-style: none; }
+.episode summary::-webkit-details-marker { display: none; }
+.episode summary h3 { min-width: 0; }
+.episode-body { padding-top: .5rem; }
 .episode h3 { margin: 0; font-size: 1rem; font-weight: 650; }
 .episode-meta { margin: .35rem 0 .55rem !important; color: #8d99a6 !important; font-size: .8rem; }
 .episode p { margin: .55rem 0 .75rem; color: #aeb8c3; }

@@ -302,7 +302,10 @@ func (s *Store) SetPodcastUserAgent(ctx context.Context, id int64, ua string) er
 	return err
 }
 func (s *Store) ListPodcasts(ctx context.Context) ([]Podcast, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT id,feed_url,title,COALESCE(description,''),COALESCE(site_url,''),COALESCE(artwork_url,''),COALESCE(artwork_local_path,''),COALESCE(custom_user_agent,''),last_refreshed_at FROM podcasts ORDER BY title`)
+	rows, err := s.db.QueryContext(ctx, `SELECT p.id,p.feed_url,p.title,COALESCE(p.description,''),COALESCE(p.site_url,''),COALESCE(p.artwork_url,''),COALESCE(p.artwork_local_path,''),COALESCE(p.custom_user_agent,''),p.last_refreshed_at,
+		EXISTS(SELECT 1 FROM episodes e LEFT JOIN playback_state ps ON ps.episode_id=e.id WHERE e.podcast_id=p.id AND e.pub_date >= datetime('now','-1 month') AND COALESCE(ps.is_completed,0)=0),
+		EXISTS(SELECT 1 FROM episodes e WHERE e.podcast_id=p.id AND e.is_downloaded=1 AND e.local_cache_path IS NOT NULL AND e.local_cache_path != '')
+		FROM podcasts p ORDER BY p.title`)
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +314,7 @@ func (s *Store) ListPodcasts(ctx context.Context) ([]Podcast, error) {
 	for rows.Next() {
 		var p Podcast
 		var refreshedAt nullableTime
-		if err := rows.Scan(&p.ID, &p.FeedURL, &p.Title, &p.Description, &p.SiteURL, &p.ArtworkURL, &p.ArtworkLocalPath, &p.CustomUserAgent, &refreshedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.FeedURL, &p.Title, &p.Description, &p.SiteURL, &p.ArtworkURL, &p.ArtworkLocalPath, &p.CustomUserAgent, &refreshedAt, &p.HasRecentUnplayed, &p.HasCachedEpisodes); err != nil {
 			return nil, err
 		}
 		p.LastRefreshedAt = refreshedAt.value

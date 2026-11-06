@@ -143,7 +143,20 @@ func (s *Store) SaveProgress(ctx context.Context, episodeID int64, seconds int, 
 	if completed {
 		done = 1
 	}
-	_, err := s.db.ExecContext(ctx, `INSERT INTO playback_state(episode_id,position_seconds,is_completed,last_played_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(episode_id) DO UPDATE SET position_seconds=excluded.position_seconds,is_completed=excluded.is_completed,last_played_at=CURRENT_TIMESTAMP`, episodeID, seconds, done)
+	if _, err := s.db.ExecContext(ctx, `INSERT INTO playback_state(episode_id,position_seconds,is_completed,last_played_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(episode_id) DO UPDATE SET position_seconds=excluded.position_seconds,is_completed=excluded.is_completed,last_played_at=CURRENT_TIMESTAMP`, episodeID, seconds, done); err != nil {
+		return err
+	}
+	if completed {
+		return s.PurgeCache(ctx, "episode", episodeID)
+	}
+	return nil
+}
+
+func (s *Store) MarkPodcastPlayed(ctx context.Context, podcastID int64) error {
+	_, err := s.db.ExecContext(ctx, `INSERT INTO playback_state(episode_id,position_seconds,is_completed,last_played_at)
+		SELECT id,COALESCE((SELECT position_seconds FROM playback_state WHERE episode_id=episodes.id),0),1,CURRENT_TIMESTAMP
+		FROM episodes WHERE podcast_id=?
+		ON CONFLICT(episode_id) DO UPDATE SET is_completed=1,last_played_at=CURRENT_TIMESTAMP`, podcastID)
 	return err
 }
 
