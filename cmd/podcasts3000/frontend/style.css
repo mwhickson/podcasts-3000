@@ -88,8 +88,8 @@ aside {
 aside form { display: flex; gap: .45rem; margin: 0 0 .75rem; }
 aside form input { min-width: 0; flex: 1; }
 .content { width: 100%; min-width: 0; min-height: 0; overflow: auto; padding: 1.5rem 2rem 7rem; }
-#podcasts { min-height: 0; flex: 1; overflow: auto; }
-#search-view { min-height: 0; flex: 1; overflow: auto; }
+#podcasts { min-height: 0; flex: 1; overflow: auto; padding-bottom: 7rem; }
+#search-view { min-height: 0; flex: 1; overflow: auto; padding-bottom: 7rem; }
 #search-results { min-height: 0; }
 .episode-toolbar {
   position: sticky;
