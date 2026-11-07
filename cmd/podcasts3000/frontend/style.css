@@ -136,12 +136,15 @@ aside form input { min-width: 0; flex: 1; }
   align-items: center;
   justify-content: space-between;
   gap: .5rem;
-  padding: .7rem;
+  margin-bottom: .45rem;
+  padding: .8rem .75rem;
   border-radius: 7px;
   cursor: pointer;
 }
 .podcast:hover, .podcast.active { background: #252c34; }
-.podcast.recent-unplayed { border-left: 3px solid #70a7ff; background: #1d2938; }
+.podcast.playing { border: 1px solid #70a7ff; background: #20344a; box-shadow: inset 3px 0 #70a7ff; }
+.podcast.playing:hover, .podcast.playing.active { background: #20344a; }
+.podcast.recent-unplayed { background: #1d2938; }
 .podcast-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .podcast-actions { display: flex; flex: 0 0 auto; gap: .3rem; }
 .compact-button { padding: .25rem .45rem; font-size: .75rem; color: #aeb8c3; }
@@ -177,6 +180,7 @@ h2 { margin: 0; font-size: 1.45rem; }
   background: #171b20;
 }
 .episode.played { opacity: .58; }
+.episode.playing { border-color: #70a7ff; background: #20344a; box-shadow: inset 3px 0 #70a7ff; opacity: 1; }
 .episode summary { list-style: none; }
 .episode summary::-webkit-details-marker { display: none; }
 .episode summary h3 { min-width: 0; }
@@ -203,7 +207,20 @@ h2 { margin: 0; font-size: 1.45rem; }
   background: rgba(21, 25, 30, .98);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, .2);
 }
-.player strong { min-width: 180px; max-width: 34%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.now-playing {
+  min-width: 180px;
+  max-width: 34%;
+  overflow: hidden;
+  padding: .35rem .5rem;
+  border-color: transparent;
+  background: transparent;
+  color: #e8eaed;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.now-playing:not(:disabled):hover { border-color: #687482; background: #293039; }
+.now-playing:disabled { cursor: default; }
 audio { width: 100%; }
 .muted { color: #8d99a6; }
 .status-bar {
@@ -233,6 +250,6 @@ audio { width: 100%; }
   .episode-toolbar label, .episode-toolbar input[type="search"], .episode-toolbar select { width: 100%; }
   .unplayed-filter { padding-bottom: 0; }
   .player { bottom: 36px; padding: .6rem .8rem; }
-  .player strong { min-width: 0; max-width: 35%; }
+  .now-playing { min-width: 0; max-width: 35%; }
   .status-bar { padding: .5rem .8rem; }
 }

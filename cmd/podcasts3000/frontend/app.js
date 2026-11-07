@@ -59,8 +59,14 @@ const formatDuration = (seconds) => {
 const renderEpisodes = () => {
   const episodes = filteredEpisodes();
   $("#episodes").innerHTML = episodes.length ? episodes.map((episode) =>
-    `<details class="episode ${episode.isCompleted ? "played" : ""}"><summary class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)} <span class="episode-meta">${formatDate(episode.pubDate)}</span></h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-played="${episode.id}">${episode.isCompleted ? "Mark unplayed" : "Mark played"}</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button>${episode.isDownloaded ? `<button class="pill-button" data-purge-episode="${episode.id}">Purge</button>` : ""}</div></summary><div class="episode-body"><p class="episode-meta">${formatDuration(episode.durationSeconds)}</p><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></details>`
+    `<details class="episode ${episode.isCompleted ? "played" : ""} ${state.episode?.id === episode.id ? "playing" : ""}" data-episode="${episode.id}"><summary class="episode-heading"><h3>${episode.isFavorite ? "★ " : ""}${escapeHTML(episode.title)} <span class="episode-meta">${formatDate(episode.pubDate)}</span></h3><div class="episode-actions"><button class="pill-button" data-play="${episode.id}">Play</button><button class="pill-button" data-played="${episode.id}">${episode.isCompleted ? "Mark unplayed" : "Mark played"}</button><button class="pill-button" data-favorite="${episode.id}">${episode.isFavorite ? "Unstar" : "Star"}</button>${episode.isDownloaded ? `<button class="pill-button" data-purge-episode="${episode.id}">Purge</button>` : ""}</div></summary><div class="episode-body"><p class="episode-meta">${formatDuration(episode.durationSeconds)}</p><p>${escapeHTML(episode.description)}</p><textarea data-note="${episode.id}" placeholder="Add a note">${escapeHTML(episode.notes)}</textarea><button class="text-button" data-save-note="${episode.id}">Save note</button></div></details>`
   ).join("") : `<p class="muted">${state.episodes.length ? "No episodes match the current filters." : "No episodes found in this feed."}</p>`;
+};
+const updatePlayingPodcast = () => {
+  document.querySelectorAll(".podcast").forEach((element) => {
+    const podcastID = Number(element.dataset.id);
+    element.classList.toggle("playing", state.episode?.podcastId === podcastID);
+  });
 };
 const setSidebarWidth = (width) => {
   const clamped = Math.min(sidebarWidth.max, Math.max(sidebarWidth.min, Math.round(width)));
@@ -168,7 +174,7 @@ async function loadPodcasts() {
   setStatus("Loading subscriptions…");
   const podcasts = (await App.ListPodcasts()) || [];
   $("#podcasts").innerHTML = podcasts.map((podcast) =>
-    `<div class="podcast ${state.podcast?.id === podcast.id ? "active" : ""} ${podcast.hasRecentUnplayed ? "recent-unplayed" : ""}" data-id="${podcast.id}"><span class="podcast-name">${escapeHTML(podcast.title)}</span><span class="podcast-actions"><button class="compact-button" data-mark-podcast-played="${podcast.id}" title="Mark all episodes played">Mark Played</button>${podcast.hasCachedEpisodes ? `<button class="compact-button" data-purge-podcast="${podcast.id}" title="Purge this podcast's downloads">Purge</button>` : ""}<button class="compact-button" data-unsubscribe="${podcast.id}" title="Unsubscribe from this podcast">Unsubscribe</button></span></div>`
+    `<div class="podcast ${state.podcast?.id === podcast.id ? "active" : ""} ${state.episode?.podcastId === podcast.id ? "playing" : ""} ${podcast.hasRecentUnplayed ? "recent-unplayed" : ""}" data-id="${podcast.id}"><span class="podcast-name">${escapeHTML(podcast.title)}</span><span class="podcast-actions"><button class="compact-button" data-mark-podcast-played="${podcast.id}" title="Mark all episodes played">Mark Played</button>${podcast.hasCachedEpisodes ? `<button class="compact-button" data-purge-podcast="${podcast.id}" title="Purge this podcast's downloads">Purge</button>` : ""}<button class="compact-button" data-unsubscribe="${podcast.id}" title="Unsubscribe from this podcast">Unsubscribe</button></span></div>`
   ).join("");
   document.querySelectorAll(".podcast").forEach((element) => {
     element.onclick = () => selectPodcast(Number(element.dataset.id));
@@ -270,8 +276,12 @@ async function play(id, position = 0, autoStart = true) {
     setStatus("Buffering episode…");
     const source = await App.GetAudioSource(id);
     state.episode = episode;
+    renderEpisodes();
+    bindEpisodeActions(episode.podcastId);
+    updatePlayingPodcast();
     $("#audio").src = source;
-    $("#now-playing").textContent = episode.title;
+    $("#now-playing").disabled = false;
+    $("#now-playing").textContent = `${state.podcast?.title || "Podcast"} — ${episode.title}`;
     const setPosition = () => {
       const audio = $("#audio");
       if (Number.isFinite(audio.duration) && audio.duration > 0) {
@@ -299,10 +309,23 @@ async function play(id, position = 0, autoStart = true) {
     state.episode = null;
     $("#audio").removeAttribute("src");
     $("#audio").load();
+    $("#now-playing").disabled = true;
     $("#now-playing").textContent = "Nothing playing";
     throw error;
   }
 }
+
+$("#now-playing").onclick = async () => {
+  if (!state.episode) return;
+  try {
+    await selectPodcast(state.episode.podcastId);
+    const episodeElement = document.querySelector(`[data-episode="${state.episode.id}"]`);
+    if (episodeElement) {
+      episodeElement.open = true;
+      episodeElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  } catch (error) { showError(error); }
+};
 
 $("#subscribe").onsubmit = async (event) => {
   event.preventDefault();
@@ -406,6 +429,7 @@ async function restoreLastPlayed() {
     state.episode = null;
     $("#audio").removeAttribute("src");
     $("#audio").load();
+    $("#now-playing").disabled = true;
     $("#now-playing").textContent = "Nothing playing";
   }
 }
